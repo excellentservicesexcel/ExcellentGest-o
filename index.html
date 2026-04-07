@@ -46,7 +46,7 @@ input:focus, select:focus { border-color: var(--primary); }
 .menu button i { margin-right: 10px; }
 .menu button:hover{background:#fff;color:#000}
 
-/* AJUSTE NO BOTÃO SAIR - PRETO TOTAL */
+/* AJUSTE NO BOTÃO SAIR */
 .btn-sair { margin-top:auto; background: #000 !important; color: #fff !important; border: 2px solid #000 !important; }
 .btn-sair:hover { background: #1a1a1a !important; border-color: #1a1a1a !important; }
 
@@ -74,11 +74,20 @@ input:focus, select:focus { border-color: var(--primary); }
 .finalizado { background: #4CAF50; color: #fff; }
 .cancelado { background: #F44336; color: #fff; }
 
+.status-lead { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: none; outline: none; cursor: pointer; text-align: center;}
+.lead-potencial { background: #2196F3; color: #fff; }
+.lead-quente { background: #F44336; color: #fff; }
+.lead-morno { background: #FF9800; color: #fff; }
+.lead-frio { background: #9E9E9E; color: #fff; }
+
 .config-icon { font-size: 20px; cursor: pointer; color: var(--primary); transition: 0.5s; }
 .config-icon:hover { transform: rotate(90deg); }
 .admin-badge { background: #FFD600; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 10px; display: none;}
 .status-select { padding: 5px; border-radius: 5px; font-size: 12px; font-weight: bold; border: none; cursor: pointer;}
 .dashboard-chart-container { background: var(--card); border-radius: 12px; padding: 20px; margin-top: 20px; border: 1px solid #333; height: 350px;}
+
+.input-inline { background: transparent; border: 1px solid transparent; color: #fff; border-bottom: 1px solid #555; border-radius: 0; padding: 5px; text-align: center; width: 60px; font-size: 13px; }
+.input-inline:focus { border-bottom: 1px solid var(--primary); }
 </style>
 </head>
 
@@ -107,7 +116,10 @@ input:focus, select:focus { border-color: var(--primary); }
         <input id="user" placeholder="Usuário">
         <input id="pass" type="password" placeholder="Senha">
         <button class="btn" onclick="login()">Entrar</button>
-        <button class="btn" style="background: transparent; color: #aaa;" onclick="abrirCadastro()">Criar conta</button>
+        <div style="display:flex; justify-content: space-between; margin-top: 10px;">
+            <button class="btn" style="background: transparent; color: #aaa; width:48%; padding:8px; font-size:12px;" onclick="abrirCadastro()">Criar conta</button>
+            <button class="btn" style="background: transparent; color: #aaa; width:48%; padding:8px; font-size:12px;" onclick="abrirMudarSenha()">Mudar Senha</button>
+        </div>
     </div>
 </div>
 
@@ -124,6 +136,17 @@ input:focus, select:focus { border-color: var(--primary); }
         <input id="empresa" placeholder="Nome da Nova Empresa" style="display:none">
         
         <button class="btn" onclick="cadastrar()">Solicitar Acesso</button>
+        <button class="btn btn-dark" onclick="voltarLogin()">Voltar</button>
+    </div>
+</div>
+
+<div class="login" id="mudarSenhaScreen" style="display:none">
+    <div class="card">
+        <h2>Alterar Senha</h2>
+        <input id="msUser" placeholder="Seu Usuário">
+        <input id="msOld" type="password" placeholder="Senha Antiga">
+        <input id="msNew" type="password" placeholder="Nova Senha">
+        <button class="btn" onclick="mudarSenhaUser()">Atualizar Senha</button>
         <button class="btn btn-dark" onclick="voltarLogin()">Voltar</button>
     </div>
 </div>
@@ -155,6 +178,8 @@ input:focus, select:focus { border-color: var(--primary); }
                 <button onclick="mostrar('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</button>
                 <button onclick="mostrar('clientes')"><i class="fa-solid fa-users"></i> Clientes</button>
                 <button onclick="mostrar('vendas')"><i class="fa-solid fa-cart-shopping"></i> Vendas</button>
+                <button onclick="mostrar('processos')"><i class="fa-solid fa-tasks"></i> Processos</button>
+                <button onclick="mostrar('finalizados')"><i class="fa-solid fa-flag-checkered"></i> Finalizados</button>
                 <button onclick="mostrar('credito')"><i class="fa-solid fa-hand-holding-dollar"></i> Crédito</button>
                 
                 <button id="btnUsuarios" onclick="mostrar('usuarios')" style="display:none; background: #000; color: #fff; font-weight:bold; margin-top: 15px;">
@@ -188,7 +213,7 @@ input:focus, select:focus { border-color: var(--primary); }
 
     let usuarios = {};
     let empresasConfigs = {};
-    let dadosGlobal = { clientes: [], vendas: [] };
+    let dadosGlobal = { clientes: [], vendas: [], processos: [], finalizados: [] };
     let chave = ''; 
     let isAdminMode = false;
     let usuarioLogado = ''; 
@@ -197,6 +222,12 @@ input:focus, select:focus { border-color: var(--primary); }
     
     let editClienteIndex = -1;
     let editVendaIndex = -1;
+    let editProcessoIndex = -1;
+    let editFinalizadoIndex = -1;
+
+    // Variáveis Globais de Filtro do Dashboard
+    window.dashMesAtual = 'ALL';
+    window.dashAnoAtual = new Date().getFullYear().toString();
 
     // --- SISTEMA DE ALERTAS CUSTOMIZADOS ---
     window.uiAlerta = (msg, tipo = 'aviso') => {
@@ -278,7 +309,7 @@ input:focus, select:focus { border-color: var(--primary); }
         select.innerHTML = html;
     }
 
-    // --- LOGIN ---
+    // --- LOGIN E SENHA ---
     window.login = () => {
         const u = document.getElementById('user').value.trim();
         const p = document.getElementById('pass').value;
@@ -325,18 +356,39 @@ input:focus, select:focus { border-color: var(--primary); }
 
     function conectarDados() {
         if(chave === 'admin_desenvolvedor') {
-            dadosGlobal = { clientes: [], vendas: [] };
+            dadosGlobal = { clientes: [], vendas: [], processos: [], finalizados: [] };
             mostrar('usuarios'); 
             return;
         }
 
         onValue(ref(db, 'dados/' + chave), (snapshot) => {
-            dadosGlobal = snapshot.val() || { clientes: [], vendas: [] };
+            dadosGlobal = snapshot.val() || { clientes: [], vendas: [], processos: [], finalizados: [] };
             if(!dadosGlobal.clientes) dadosGlobal.clientes = [];
             if(!dadosGlobal.vendas) dadosGlobal.vendas = [];
+            if(!dadosGlobal.processos) dadosGlobal.processos = [];
+            if(!dadosGlobal.finalizados) dadosGlobal.finalizados = [];
             mostrar(telaAtual);
         });
     }
+
+    window.mudarSenhaUser = () => {
+        const u = document.getElementById('msUser').value.trim();
+        const oldP = document.getElementById('msOld').value;
+        const newP = document.getElementById('msNew').value;
+
+        if(!u || !oldP || !newP) return uiAlerta('Preencha todos os campos.', 'aviso');
+
+        get(ref(db, `usuarios/${u}`)).then((snapshot) => {
+            if(snapshot.exists() && snapshot.val().senha === oldP) {
+                set(ref(db, `usuarios/${u}/senha`), newP).then(() => {
+                    uiAlerta('Sua senha foi atualizada com sucesso!', 'sucesso');
+                    voltarLogin();
+                });
+            } else {
+                uiAlerta('Usuário ou senha antiga incorretos.', 'erro');
+            }
+        });
+    };
 
     // --- CONFIGURAÇÕES & ADMIN ---
     window.abrirConfig = () => {
@@ -383,11 +435,11 @@ input:focus, select:focus { border-color: var(--primary); }
         if(!n || !c) return uiAlerta("Nome e Telefone são obrigatórios.", "aviso");
 
         if(editClienteIndex > -1) {
-            dadosGlobal.clientes[editClienteIndex] = {nome:n, cel:c, doc:d};
+            dadosGlobal.clientes[editClienteIndex] = {...dadosGlobal.clientes[editClienteIndex], nome:n, cel:c, doc:d};
             editClienteIndex = -1;
             uiAlerta("Cliente atualizado com sucesso!", "sucesso");
         } else {
-            dadosGlobal.clientes.push({nome:n, cel:c, doc:d});
+            dadosGlobal.clientes.push({nome:n, cel:c, doc:d, statusLead: ''});
             uiAlerta("Cliente salvo com sucesso!", "sucesso");
         }
         
@@ -411,10 +463,22 @@ input:focus, select:focus { border-color: var(--primary); }
         });
     };
 
-    // --- VENDAS ---
+    window.mudarStatusCliente = (i, status) => {
+        dadosGlobal.clientes[i].statusLead = status;
+        set(ref(db, 'dados/' + chave), dadosGlobal);
+    };
+
+    // --- VENDAS, PROCESSOS & EXCLUSAO GENERICA ---
     window.hojeInput = () => {
         const hj = new Date();
         return hj.toISOString().split('T')[0];
+    }
+
+    window.calcularDataFim = (dataInicioStr, dias) => {
+        if(!dataInicioStr || !dias) return '';
+        let d = new Date(dataInicioStr + "T12:00:00"); 
+        d.setDate(d.getDate() + parseInt(dias));
+        return d.toISOString().split('T')[0];
     }
 
     window.salvarVenda = () => {
@@ -424,7 +488,7 @@ input:focus, select:focus { border-color: var(--primary); }
         let v = {
             cliente: cli,
             cpf: document.getElementById('cpf').value,
-            dataVenda: document.getElementById('dataVenda').value, // Nova data
+            dataVenda: document.getElementById('dataVenda').value,
             valor: document.getElementById('valor').value,
             entrada: document.getElementById('entrada').value,
             tipo: document.getElementById('tipo').value,
@@ -440,13 +504,27 @@ input:focus, select:focus { border-color: var(--primary); }
             dadosGlobal.vendas[editVendaIndex] = v;
             editVendaIndex = -1;
             uiAlerta("Venda atualizada!", "sucesso");
+            set(ref(db, 'dados/' + chave), dadosGlobal);
+            mostrar('vendas');
         } else {
-            dadosGlobal.vendas.push(v);
-            uiAlerta("Venda registrada com sucesso!", "sucesso");
+            if (v.status === 'Finalizado') {
+                // Vai direto pra processos se for lançada como finalizado
+                v.statusProcesso = 'Em andamento';
+                v.dataInicio = window.hojeInput();
+                v.dias = '';
+                v.dataFim = '';
+                v.tipoProcesso = 'Ajuste';
+                dadosGlobal.processos.push(v);
+                uiAlerta("Venda registrada e enviada para Processos!", "sucesso");
+                set(ref(db, 'dados/' + chave), dadosGlobal);
+                mostrar('processos');
+            } else {
+                dadosGlobal.vendas.push(v);
+                uiAlerta("Venda registrada com sucesso!", "sucesso");
+                set(ref(db, 'dados/' + chave), dadosGlobal);
+                mostrar('vendas');
+            }
         }
-        
-        set(ref(db, 'dados/' + chave), dadosGlobal);
-        mostrar('vendas');
     };
 
     window.editarVenda = (i) => {
@@ -474,17 +552,151 @@ input:focus, select:focus { border-color: var(--primary); }
         document.querySelector('.submenu .btn').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Venda';
     };
 
-    window.excluirVenda = (i) => {
-        uiConfirmar("Deseja deletar este registro de venda?", () => {
-            dadosGlobal.vendas.splice(i, 1);
+    window.editarProcesso = (i) => {
+        const p = dadosGlobal.processos[i];
+        document.getElementById('clienteSel').value = p.cliente;
+        document.getElementById('cpf').value = p.cpf;
+        document.getElementById('dataVenda').value = p.dataVenda || window.hojeInput();
+        document.getElementById('valor').value = p.valor;
+        document.getElementById('entrada').value = p.entrada;
+        document.getElementById('tipo').value = p.tipo;
+        window.verCredito(); 
+        
+        if(p.tipo === 'Crédito') {
+            setTimeout(() => {
+                document.getElementById('taxa').value = p.taxa;
+                document.getElementById('parcelas').value = p.parcelas;
+                document.getElementById('restante').value = p.restante;
+                document.getElementById('data').value = p.data;
+            }, 50);
+        }
+        
+        editProcessoIndex = i;
+        document.querySelector('.submenu .btn').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Dados Iniciais';
+    };
+
+    window.salvarEdicaoProcesso = () => {
+        const cli = document.getElementById('clienteSel').value;
+        if(!cli) return;
+
+        let pOriginal = dadosGlobal.processos[editProcessoIndex];
+        
+        pOriginal.cliente = cli;
+        pOriginal.cpf = document.getElementById('cpf').value;
+        pOriginal.dataVenda = document.getElementById('dataVenda').value;
+        pOriginal.valor = document.getElementById('valor').value;
+        pOriginal.entrada = document.getElementById('entrada').value;
+        pOriginal.tipo = document.getElementById('tipo').value;
+        pOriginal.taxa = document.getElementById('taxa')?.value || '';
+        pOriginal.parcelas = document.getElementById('parcelas')?.value || '';
+        pOriginal.restante = document.getElementById('restante')?.value || '';
+        pOriginal.data = document.getElementById('data')?.value || '';
+
+        dadosGlobal.processos[editProcessoIndex] = pOriginal;
+        editProcessoIndex = -1;
+        uiAlerta("Processo atualizado!", "sucesso");
+        set(ref(db, 'dados/' + chave), dadosGlobal);
+        mostrar('processos');
+    }
+
+    window.editarFinalizado = (i) => {
+        // Similar ao processo
+        const f = dadosGlobal.finalizados[i];
+        document.getElementById('clienteSel').value = f.cliente;
+        document.getElementById('cpf').value = f.cpf;
+        document.getElementById('dataVenda').value = f.dataVenda || window.hojeInput();
+        document.getElementById('valor').value = f.valor;
+        document.getElementById('entrada').value = f.entrada;
+        document.getElementById('tipo').value = f.tipo;
+        window.verCredito(); 
+        
+        if(f.tipo === 'Crédito') {
+            setTimeout(() => {
+                document.getElementById('taxa').value = f.taxa;
+                document.getElementById('parcelas').value = f.parcelas;
+                document.getElementById('restante').value = f.restante;
+                document.getElementById('data').value = f.data;
+            }, 50);
+        }
+        
+        editFinalizadoIndex = i;
+        document.querySelector('.submenu .btn').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Finalizado';
+    };
+
+    window.salvarEdicaoFinalizado = () => {
+        const cli = document.getElementById('clienteSel').value;
+        if(!cli) return;
+
+        let fOriginal = dadosGlobal.finalizados[editFinalizadoIndex];
+        
+        fOriginal.cliente = cli;
+        fOriginal.cpf = document.getElementById('cpf').value;
+        fOriginal.dataVenda = document.getElementById('dataVenda').value;
+        fOriginal.valor = document.getElementById('valor').value;
+        fOriginal.entrada = document.getElementById('entrada').value;
+        fOriginal.tipo = document.getElementById('tipo').value;
+        fOriginal.taxa = document.getElementById('taxa')?.value || '';
+        fOriginal.parcelas = document.getElementById('parcelas')?.value || '';
+        fOriginal.restante = document.getElementById('restante')?.value || '';
+        fOriginal.data = document.getElementById('data')?.value || '';
+
+        dadosGlobal.finalizados[editFinalizadoIndex] = fOriginal;
+        editFinalizadoIndex = -1;
+        uiAlerta("Registro finalizado atualizado!", "sucesso");
+        set(ref(db, 'dados/' + chave), dadosGlobal);
+        mostrar('finalizados');
+    }
+
+    window.excluirGenerico = (arrayName, i) => {
+        uiConfirmar("Deseja deletar este registro permanentemente?", () => {
+            dadosGlobal[arrayName].splice(i, 1);
             set(ref(db, 'dados/' + chave), dadosGlobal);
         });
     };
 
     window.mudarStatusVenda = (index, novoStatus) => {
-        dadosGlobal.vendas[index].status = novoStatus;
-        set(ref(db, 'dados/' + chave), dadosGlobal);
+        if(novoStatus === 'Finalizado') {
+            let item = dadosGlobal.vendas.splice(index, 1)[0];
+            item.statusProcesso = 'Em andamento';
+            item.dataInicio = window.hojeInput();
+            item.dias = '';
+            item.dataFim = '';
+            item.tipoProcesso = 'Ajuste'; 
+            dadosGlobal.processos.push(item);
+            set(ref(db, 'dados/' + chave), dadosGlobal);
+            uiAlerta("Venda movida para aba de Processos!", "sucesso");
+            mostrar('vendas');
+        } else {
+            dadosGlobal.vendas[index].status = novoStatus;
+            set(ref(db, 'dados/' + chave), dadosGlobal);
+        }
     };
+
+    window.mudarStatusProcesso = (index, novoStatus) => {
+        if(novoStatus === 'Finalizado') {
+            let item = dadosGlobal.processos.splice(index, 1)[0];
+            dadosGlobal.finalizados.push(item);
+            set(ref(db, 'dados/' + chave), dadosGlobal);
+            uiAlerta("Processo concluído e movido para Finalizados!", "sucesso");
+            mostrar('processos');
+        } else {
+            dadosGlobal.processos[index].statusProcesso = novoStatus;
+            set(ref(db, 'dados/' + chave), dadosGlobal);
+        }
+    }
+
+    window.mudarTipoProcesso = (index, novoTipo) => {
+        dadosGlobal.processos[index].tipoProcesso = novoTipo;
+        set(ref(db, 'dados/' + chave), dadosGlobal);
+    }
+
+    window.atualizarDiasProcesso = (index, dias) => {
+        let p = dadosGlobal.processos[index];
+        p.dias = dias;
+        p.dataFim = window.calcularDataFim(p.dataInicio, dias);
+        set(ref(db, 'dados/' + chave), dadosGlobal);
+        mostrar('processos'); 
+    }
 
     // --- DEV GESTÃO ---
     window.atualizarAcesso = (user, novoStatus) => {
@@ -496,23 +708,33 @@ input:focus, select:focus { border-color: var(--primary); }
         .then(() => uiAlerta(`Senha master de ${empresa} atualizada!`, 'sucesso'));
     };
 
+    window.atualizarSenhaUsuario = (user, novaSenha) => {
+        set(ref(db, `usuarios/${user}/senha`), novaSenha)
+        .then(() => uiAlerta(`Senha do usuário ${user} atualizada!`, 'sucesso'));
+    };
+
     window.excluirUsuario = (nick) => {
         uiConfirmar(`Remover permanentemente o usuário '${nick}' do sistema?`, () => {
             remove(ref(db, `usuarios/${nick}`));
         });
     }
 
+    // --- FILTROS DASHBOARD ---
+    window.setDashFiltro = (tipo, val) => {
+        if(tipo === 'mes') window.dashMesAtual = val;
+        if(tipo === 'ano') window.dashAnoAtual = val;
+        mostrar('dashboard');
+    }
+
     // --- CHART JS (POWER BI STYLE) ---
-    window.renderDashboardChart = () => {
+    window.renderDashboardChart = (todasVendasFiltradas) => {
         const ctx = document.getElementById('vendasChart');
         if(!ctx) return;
         
         if(chartInstance) chartInstance.destroy();
 
-        // Agrupar dados por data
         let faturamentoPorData = {};
-        dadosGlobal.vendas.forEach(v => {
-            if(v.status === 'Cancelado') return; // Ignora canceladas
+        todasVendasFiltradas.forEach(v => {
             let data = v.dataVenda || 'Sem Data';
             let valorNum = parseFloat(v.valor.replace(/\D/g, '')) / 100 || 0;
             
@@ -520,11 +742,9 @@ input:focus, select:focus { border-color: var(--primary); }
             faturamentoPorData[data] += valorNum;
         });
 
-        // Ordenar datas
         let datasOrdenadas = Object.keys(faturamentoPorData).sort();
         let valores = datasOrdenadas.map(d => faturamentoPorData[d]);
 
-        // Formatar datas para exibição (DD/MM)
         let labelsFormatadas = datasOrdenadas.map(d => {
             if(d === 'Sem Data') return d;
             let parts = d.split('-');
@@ -547,7 +767,7 @@ input:focus, select:focus { border-color: var(--primary); }
                     pointRadius: 5,
                     pointHoverRadius: 7,
                     fill: true,
-                    tension: 0.4 // Linha suave
+                    tension: 0.4 
                 }]
             },
             options: {
@@ -606,7 +826,6 @@ input:focus, select:focus { border-color: var(--primary); }
                 
                 let trs = listaUsuarios.map(u => {
                     let corBg = u.statusAcesso === 'permitido' ? '#4CAF50' : (u.statusAcesso === 'negado' ? '#F44336' : '#FFD600');
-                    // AJUSTE DE CONTRASTE: Se for amarelo (#FFD600) ou pendente, o texto DEVE ser preto (#000)
                     let corTexto = (u.statusAcesso === 'pendente' || corBg === '#FFD600') ? '#000' : '#fff';
                     
                     return `
@@ -619,7 +838,9 @@ input:focus, select:focus { border-color: var(--primary); }
                                 <option value="negado" style="background:#333; color:#fff;" ${u.statusAcesso === 'negado'?'selected':''}>Negado</option>
                             </select>
                         </td>
-                        <td>${u.senha}</td>
+                        <td>
+                            <input type="text" value="${u.senha}" onchange="window.atualizarSenhaUsuario('${u.nick}', this.value)" style="width: 100%; background: transparent; border: none; color: #fff; border-bottom: 1px solid #555; text-align:left; padding:2px;">
+                        </td>
                         ${isAdminMode ? `<td style="text-align:right;"><button class="action-btn del-btn" onclick="window.excluirUsuario('${u.nick}')"><i class="fa-solid fa-trash"></i></button></td>` : ''}
                     </tr>`;
                 }).join('');
@@ -658,18 +879,43 @@ input:focus, select:focus { border-color: var(--primary); }
                 <input id="doc" placeholder="CPF/CNPJ" oninput="window.mascaraDoc(this)" maxlength="18">
                 <button class="btn" onclick="salvarCliente()"><i class="fa-solid fa-floppy-disk"></i> Salvar Cliente</button>
             `;
+
+            // Ordenação
+            const pesosLead = {'Em potencial': 1, 'Quente': 2, 'Morno': 3, 'Frio': 4};
+            let clientesOrdenados = dadosGlobal.clientes.map((c, idx) => ({...c, originalIdx: idx}));
+            clientesOrdenados.sort((a, b) => {
+                let pA = pesosLead[a.statusLead] || 5;
+                let pB = pesosLead[b.statusLead] || 5;
+                return pA - pB;
+            });
+
             conteudo.innerHTML = `
                 <h2>Gestão de Clientes</h2>
                 <div class="tabela-container">
                     <table class="tabela">
-                        <thead><tr><th>Nome</th><th>Documento</th><th>Contato Rapido</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
+                        <thead><tr><th>Nome</th><th>Documento</th><th>Status Lead</th><th>Contato Rapido</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
-                            ${dadosGlobal.clientes.map((c, i) => {
+                            ${clientesOrdenados.map((c) => {
                                 let numLimpo = c.cel.replace(/\D/g, '');
+                                let selClasse = 'lead-frio';
+                                if(c.statusLead === 'Em potencial') selClasse = 'lead-potencial';
+                                else if(c.statusLead === 'Quente') selClasse = 'lead-quente';
+                                else if(c.statusLead === 'Morno') selClasse = 'lead-morno';
+                                else if(!c.statusLead) selClasse = '';
+
                                 return `
                                 <tr>
                                     <td><strong style="color:var(--text);">${c.nome}</strong></td>
                                     <td style="color:#aaa;">${c.doc || 'N/A'}</td>
+                                    <td>
+                                        <select class="status-lead ${selClasse}" onchange="window.mudarStatusCliente(${c.originalIdx}, this.value)">
+                                            <option value="" style="background:#333; color:#fff;" ${!c.statusLead?'selected':''}>Nenhum</option>
+                                            <option value="Em potencial" style="background:#333; color:#fff;" ${c.statusLead==='Em potencial'?'selected':''}>Em potencial</option>
+                                            <option value="Quente" style="background:#333; color:#fff;" ${c.statusLead==='Quente'?'selected':''}>Quente</option>
+                                            <option value="Morno" style="background:#333; color:#fff;" ${c.statusLead==='Morno'?'selected':''}>Morno</option>
+                                            <option value="Frio" style="background:#333; color:#fff;" ${c.statusLead==='Frio'?'selected':''}>Frio</option>
+                                        </select>
+                                    </td>
                                     <td>
                                         <div style="display:flex; gap: 8px;">
                                             <a href="https://wa.me/55${numLimpo}" target="_blank" class="action-btn" style="background:#25D366; color:#fff; text-decoration:none;" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
@@ -679,8 +925,8 @@ input:focus, select:focus { border-color: var(--primary); }
                                     </td>
                                     ${isAdminMode ? `
                                     <td style="text-align:right;">
-                                        <button class="action-btn edit-btn" onclick="editarCliente(${i})"><i class="fa-solid fa-pen"></i></button>
-                                        <button class="action-btn del-btn" onclick="excluirCliente(${i})"><i class="fa-solid fa-trash"></i></button>
+                                        <button class="action-btn edit-btn" onclick="editarCliente(${c.originalIdx})"><i class="fa-solid fa-pen"></i></button>
+                                        <button class="action-btn del-btn" onclick="excluirCliente(${c.originalIdx})"><i class="fa-solid fa-trash"></i></button>
                                     </td>` : ''}
                                 </tr>`
                             }).join('')}
@@ -731,14 +977,14 @@ input:focus, select:focus { border-color: var(--primary); }
                                     <td>
                                         <select class="badge ${cls}" onchange="window.mudarStatusVenda(${i}, this.value)">
                                             <option value="Em andamento" style="background:#333; color:#fff;" ${v.status==='Em andamento'?'selected':''}>Em andamento</option>
-                                            <option value="Finalizado" style="background:#333; color:#fff;" ${v.status==='Finalizado'?'selected':''}>Finalizado</option>
+                                            <option value="Finalizado" style="background:#333; color:#fff;" ${v.status==='Finalizado'?'selected':''}>Finalizado (Mover para Processos)</option>
                                             <option value="Cancelado" style="background:#333; color:#fff;" ${v.status==='Cancelado'?'selected':''}>Cancelado</option>
                                         </select>
                                     </td>
                                     ${isAdminMode ? `
                                     <td style="text-align:right;">
                                         <button class="action-btn edit-btn" onclick="editarVenda(${i})"><i class="fa-solid fa-pen"></i></button>
-                                        <button class="action-btn del-btn" onclick="excluirVenda(${i})"><i class="fa-solid fa-trash"></i></button>
+                                        <button class="action-btn del-btn" onclick="window.excluirGenerico('vendas', ${i})"><i class="fa-solid fa-trash"></i></button>
                                     </td>` : ''}
                                 </tr>`;
                             }).join('')}
@@ -746,26 +992,203 @@ input:focus, select:focus { border-color: var(--primary); }
                     </table>
                 </div>`;
         }
-        
+
+        if(tela === 'processos') {
+            editProcessoIndex = -1;
+            let options = dadosGlobal.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+            
+            // Submenu atuará como Editor caso seja acionado, senão mostrará um resumo
+            submenu.innerHTML = `
+                <div id="formEdicaoProcesso">
+                    <h3>Editar Base Processo</h3>
+                    <p style="color:#aaa; font-size:12px; margin-bottom:15px;">Use a tabela para alterar dias e status rápidos. Use aqui para alterar a raiz da venda gerada.</p>
+                    <input id="dataVenda" type="date">
+                    <select id="clienteSel" onchange="window.autoCPF()">
+                        <option value="">Selecionar Cliente</option>${options}
+                    </select>
+                    <input id="cpf" placeholder="CPF/CNPJ" readonly style="background:#222;">
+                    <input id="valor" placeholder="Valor Total" oninput="window.mascaraMoeda(this); window.calcularRestante()">
+                    <input id="entrada" placeholder="Valor Entrada" oninput="window.mascaraMoeda(this); window.calcularRestante()">
+                    <select id="tipo" onchange="window.verCredito()">
+                        <option value="Pix" selected>Pix</option>
+                        <option value="Crédito">Crédito</option>
+                        <option value="Débito">Débito</option>
+                    </select>
+                    <div id="extra"></div>
+                    <button class="btn" onclick="salvarEdicaoProcesso()"><i class="fa-solid fa-floppy-disk"></i> Salvar Edição</button>
+                </div>
+            `;
+
+            let procOrdenados = dadosGlobal.processos.map((p, idx) => ({...p, originalIdx: idx}));
+            procOrdenados.sort((a, b) => new Date(a.dataVenda) - new Date(b.dataVenda));
+
+            conteudo.innerHTML = `<h2>Processos Ativos</h2>
+                <div class="tabela-container">
+                    <table class="tabela">
+                        <thead><tr><th>Data Venda</th><th>Cliente</th><th>Data Início</th><th>Dias</th><th>Data Fim</th><th>Tipo</th><th>Status</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
+                        <tbody>
+                            ${procOrdenados.map((p) => {
+                                let cls = p.statusProcesso === 'Em andamento' ? 'andamento' : (p.statusProcesso === 'Finalizado' ? 'finalizado' : 'cancelado');
+                                let dExibicao = p.dataVenda ? p.dataVenda.split('-').reverse().join('/') : '-';
+                                let dFimExibicao = p.dataFim ? p.dataFim.split('-').reverse().join('/') : '---';
+                                let dInicExibicao = p.dataInicio ? p.dataInicio.split('-').reverse().join('/') : '-';
+                                
+                                return `<tr>
+                                    <td style="color:#aaa; font-size:12px;">${dExibicao}</td>
+                                    <td><strong>${p.cliente}</strong><br><span style="color:var(--primary); font-size:12px;">${p.valor}</span></td>
+                                    <td style="font-size:13px;">${dInicExibicao}</td>
+                                    <td><input type="number" class="input-inline" value="${p.dias||''}" placeholder="Ex: 3" onchange="window.atualizarDiasProcesso(${p.originalIdx}, this.value)"></td>
+                                    <td style="font-size:13px; color:#2196F3; font-weight:bold;">${dFimExibicao}</td>
+                                    <td>
+                                        <select class="badge" style="background:#222; color:#fff;" onchange="window.mudarTipoProcesso(${p.originalIdx}, this.value)">
+                                            <option value="Ajuste" ${p.tipoProcesso==='Ajuste'?'selected':''}>Ajuste</option>
+                                            <option value="Suporte" ${p.tipoProcesso==='Suporte'?'selected':''}>Suporte</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="badge ${cls}" onchange="window.mudarStatusProcesso(${p.originalIdx}, this.value)">
+                                            <option value="Em andamento" style="background:#333; color:#fff;" ${p.statusProcesso==='Em andamento'?'selected':''}>Em andamento</option>
+                                            <option value="Finalizado" style="background:#333; color:#fff;" ${p.statusProcesso==='Finalizado'?'selected':''}>Finalizado (Mover)</option>
+                                            <option value="Cancelado" style="background:#333; color:#fff;" ${p.statusProcesso==='Cancelado'?'selected':''}>Cancelado</option>
+                                        </select>
+                                    </td>
+                                    ${isAdminMode ? `
+                                    <td style="text-align:right;">
+                                        <button class="action-btn edit-btn" onclick="editarProcesso(${p.originalIdx})"><i class="fa-solid fa-pen"></i></button>
+                                        <button class="action-btn del-btn" onclick="window.excluirGenerico('processos', ${p.originalIdx})"><i class="fa-solid fa-trash"></i></button>
+                                    </td>` : ''}
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+        }
+
+        if(tela === 'finalizados') {
+            editFinalizadoIndex = -1;
+            let options = dadosGlobal.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+            
+            submenu.innerHTML = `
+                <div id="formEdicaoFinalizado">
+                    <h3>Editar Registro Finalizado</h3>
+                    <input id="dataVenda" type="date">
+                    <select id="clienteSel" onchange="window.autoCPF()">
+                        <option value="">Selecionar Cliente</option>${options}
+                    </select>
+                    <input id="cpf" placeholder="CPF/CNPJ" readonly style="background:#222;">
+                    <input id="valor" placeholder="Valor Total" oninput="window.mascaraMoeda(this); window.calcularRestante()">
+                    <input id="entrada" placeholder="Valor Entrada" oninput="window.mascaraMoeda(this); window.calcularRestante()">
+                    <select id="tipo" onchange="window.verCredito()">
+                        <option value="Pix" selected>Pix</option>
+                        <option value="Crédito">Crédito</option>
+                        <option value="Débito">Débito</option>
+                    </select>
+                    <div id="extra"></div>
+                    <button class="btn" onclick="salvarEdicaoFinalizado()"><i class="fa-solid fa-floppy-disk"></i> Salvar Edição</button>
+                </div>
+            `;
+
+            let finOrdenados = dadosGlobal.finalizados.map((f, idx) => ({...f, originalIdx: idx}));
+            finOrdenados.sort((a, b) => new Date(b.dataVenda) - new Date(a.dataVenda)); // Mais recentes primeiro
+
+            conteudo.innerHTML = `<h2>Trabalhos Finalizados</h2>
+                <div class="tabela-container">
+                    <table class="tabela">
+                        <thead><tr><th>Data Venda</th><th>Cliente</th><th>Valor</th><th>Data Fim</th><th>Tipo</th><th>Status</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
+                        <tbody>
+                            ${finOrdenados.map((f) => {
+                                let dExibicao = f.dataVenda ? f.dataVenda.split('-').reverse().join('/') : '-';
+                                let dFimExibicao = f.dataFim ? f.dataFim.split('-').reverse().join('/') : '---';
+                                
+                                return `<tr>
+                                    <td style="color:#aaa; font-size:12px;">${dExibicao}</td>
+                                    <td><strong>${f.cliente}</strong></td>
+                                    <td style="color:var(--primary); font-weight:bold;">${f.valor}</td>
+                                    <td style="font-size:13px; color:#4CAF50;">${dFimExibicao}</td>
+                                    <td><span class="badge" style="background:#222; color:#fff;">${f.tipoProcesso}</span></td>
+                                    <td><span class="badge finalizado">Finalizado</span></td>
+                                    ${isAdminMode ? `
+                                    <td style="text-align:right;">
+                                        <button class="action-btn edit-btn" onclick="editarFinalizado(${f.originalIdx})"><i class="fa-solid fa-pen"></i></button>
+                                        <button class="action-btn del-btn" onclick="window.excluirGenerico('finalizados', ${f.originalIdx})"><i class="fa-solid fa-trash"></i></button>
+                                    </td>` : ''}
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+        }
+
         if(tela === 'dashboard') {
+            // Combina todas as vendas, processos e finalizados
+            let todasAsVendas = [
+                ...(dadosGlobal.vendas || []),
+                ...(dadosGlobal.processos || []),
+                ...(dadosGlobal.finalizados || [])
+            ];
+
+            // Montar Options do Filtro
+            let optMeses = `<option value="ALL">Todos os Meses</option>`;
+            for(let m=1; m<=12; m++) {
+                let mStr = m.toString().padStart(2, '0');
+                optMeses += `<option value="${mStr}" ${window.dashMesAtual === mStr ? 'selected' : ''}>${mStr}</option>`;
+            }
+
+            let anosUnicos = ['2024','2025','2026','2027'];
+            todasAsVendas.forEach(v => {
+                if(v.dataVenda) {
+                    let a = v.dataVenda.split('-')[0];
+                    if(!anosUnicos.includes(a)) anosUnicos.push(a);
+                }
+            });
+            let optAnos = `<option value="ALL">Todos os Anos</option>`;
+            anosUnicos.sort().forEach(a => {
+                optAnos += `<option value="${a}" ${window.dashAnoAtual === a ? 'selected' : ''}>${a}</option>`;
+            });
+
             submenu.innerHTML = `
                 <h3>Resumo Geral</h3>
                 <p style="color:#aaa; font-size:13px; margin-bottom:20px;">Métricas e acompanhamento de receita.</p>
+                
+                <div style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom:15px;">
+                    <h4 style="font-size:13px; margin-bottom:5px;">Filtro do Gráfico</h4>
+                    <select onchange="window.setDashFiltro('mes', this.value)" style="margin-bottom:5px;">${optMeses}</select>
+                    <select onchange="window.setDashFiltro('ano', this.value)">${optAnos}</select>
+                </div>
+
                 <div class="card" style="width: 100%; text-align: center; margin-bottom: 15px; padding:15px; box-shadow:none; border:1px solid #333;">
                     <h4 style="color: #aaa; font-weight:400; font-size:14px;">Total Clientes</h4>
                     <p style="font-size: 28px; font-weight: bold; color:var(--text);">${dadosGlobal.clientes.length}</p>
                 </div>
                 <div class="card" style="width: 100%; text-align: center; padding:15px; box-shadow:none; border:1px solid #333;">
-                    <h4 style="color: #aaa; font-weight:400; font-size:14px;">Total Vendas</h4>
-                    <p style="font-size: 28px; font-weight: bold; color:var(--text);">${dadosGlobal.vendas.length}</p>
+                    <h4 style="color: #aaa; font-weight:400; font-size:14px;">Total Vendas Lançadas</h4>
+                    <p style="font-size: 28px; font-weight: bold; color:var(--text);">${todasAsVendas.length}</p>
                 </div>
             `;
             
-            // Calculo Dinâmico para Header do Dashboard
-            let faturamentoBruto = 0;
-            dadosGlobal.vendas.forEach(v => {
-                if(v.status !== 'Cancelado') {
-                    faturamentoBruto += parseFloat(v.valor.replace(/\D/g, '')) / 100 || 0;
+            // Aplica filtro e calcula
+            let vendasFiltradas = todasAsVendas.filter(v => {
+                if(v.status === 'Cancelado' || v.statusProcesso === 'Cancelado') return false;
+                
+                let anoVenda = v.dataVenda ? v.dataVenda.split('-')[0] : '';
+                let mesVenda = v.dataVenda ? v.dataVenda.split('-')[1] : '';
+                
+                let passaMes = (window.dashMesAtual === 'ALL') || (mesVenda === window.dashMesAtual);
+                let passaAno = (window.dashAnoAtual === 'ALL') || (anoVenda === window.dashAnoAtual);
+                
+                return passaMes && passaAno;
+            });
+
+            let faturamentoFiltrado = 0;
+            vendasFiltradas.forEach(v => {
+                faturamentoFiltrado += parseFloat(v.valor.replace(/\D/g, '')) / 100 || 0;
+            });
+
+            // Total Geral Ignorando Filtro de Datas (Para manter como requisitado)
+            let faturamentoTotalGeral = 0;
+            todasAsVendas.forEach(v => {
+                if(v.status !== 'Cancelado' && v.statusProcesso !== 'Cancelado') {
+                    faturamentoTotalGeral += parseFloat(v.valor.replace(/\D/g, '')) / 100 || 0;
                 }
             });
 
@@ -773,9 +1196,12 @@ input:focus, select:focus { border-color: var(--primary); }
                 <div style="display:flex; justify-content:space-between; align-items:flex-end;">
                     <h2>Dashboard de Receitas</h2>
                     <div style="text-align:right;">
-                        <span style="font-size:12px; color:#aaa;">Faturamento Bruto Total</span><br>
-                        <strong style="font-size:24px; color:var(--primary);">R$ ${faturamentoBruto.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
+                        <span style="font-size:12px; color:#aaa;">Faturamento (No Filtro)</span><br>
+                        <strong style="font-size:24px; color:var(--primary);">R$ ${faturamentoFiltrado.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
                     </div>
+                </div>
+                <div style="text-align:right; margin-top:5px;">
+                    <span style="font-size:11px; color:#666;">Total Geral de Tudo: R$ ${faturamentoTotalGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
                 </div>
                 
                 <div class="dashboard-chart-container">
@@ -783,24 +1209,26 @@ input:focus, select:focus { border-color: var(--primary); }
                 </div>
             `;
             
-            // Renderiza o Gráfico após a injeção do HTML
-            setTimeout(() => window.renderDashboardChart(), 50);
+            setTimeout(() => window.renderDashboardChart(vendasFiltradas), 50);
         }
 
         if(tela === 'credito') {
             submenu.innerHTML = `<h3>Créditos</h3><p style="color:#aaa; font-size:13px;">Gestão de parcelamentos.</p>`;
             
-            // Mapeamos as vendas de crédito salvando o índice original para permitir edição/exclusão correta
-            let vCredito = dadosGlobal.vendas
-                .map((v, idx) => ({ ...v, originalIdx: idx }))
-                .filter(v => v.tipo === 'Crédito');
+            // Busca em todas as arrays e mapeia a origem
+            let c1 = (dadosGlobal.vendas || []).map((v, i) => ({...v, originalIdx: i, origem: 'vendas'})).filter(v => v.tipo === 'Crédito');
+            let c2 = (dadosGlobal.processos || []).map((v, i) => ({...v, originalIdx: i, origem: 'processos'})).filter(v => v.tipo === 'Crédito');
+            let c3 = (dadosGlobal.finalizados || []).map((v, i) => ({...v, originalIdx: i, origem: 'finalizados'})).filter(v => v.tipo === 'Crédito');
+            
+            let vCredito = [...c1, ...c2, ...c3];
 
             conteudo.innerHTML = `<h2>Controle de Parcelas</h2>
                 <div class="tabela-container">
                     <table class="tabela">
-                        <thead><tr><th>Cliente</th><th>Total</th><th>Restante</th><th>Parcelas</th><th>Vencimento</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
+                        <thead><tr><th>Fase Atual</th><th>Cliente</th><th>Total</th><th>Restante</th><th>Parcelas</th><th>Vencimento</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
                             ${vCredito.map(v => `<tr>
+                                <td><span class="badge" style="background:#222; color:#aaa; font-weight:normal;">${v.origem.toUpperCase()}</span></td>
                                 <td><strong>${v.cliente}</strong></td>
                                 <td style="color:#aaa;">${v.valor}</td>
                                 <td style="color:#F44336; font-weight:bold;">${v.restante}</td>
@@ -808,8 +1236,8 @@ input:focus, select:focus { border-color: var(--primary); }
                                 <td><span class="badge" style="background:#222; color:var(--primary);">${v.data ? v.data.split('-').reverse().join('/') : '-'}</span></td>
                                 ${isAdminMode ? `
                                 <td style="text-align:right;">
-                                    <button class="action-btn edit-btn" onclick="mostrar('vendas'); setTimeout(()=>editarVenda(${v.originalIdx}), 100)" title="Editar na aba Vendas"><i class="fa-solid fa-pen"></i></button>
-                                    <button class="action-btn del-btn" onclick="excluirVenda(${v.originalIdx})" title="Excluir Registro"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="action-btn edit-btn" onclick="mostrar('${v.origem}'); setTimeout(()=> window['editar${v.origem.charAt(0).toUpperCase() + v.origem.slice(1).replace('s', v.origem==='vendas'?'a':'o')}'](${v.originalIdx}), 100)" title="Editar na aba de origem"><i class="fa-solid fa-pen"></i></button>
+                                    <button class="action-btn del-btn" onclick="window.excluirGenerico('${v.origem}', ${v.originalIdx})" title="Excluir Registro"><i class="fa-solid fa-trash"></i></button>
                                 </td>` : ''}
                             </tr>`).join('')}
                         </tbody>
@@ -818,7 +1246,7 @@ input:focus, select:focus { border-color: var(--primary); }
         }
     };
 
-    // --- UTILITÁRIOS & CADASTRO ---
+    // --- UTILITÁRIOS & CADASTRO E TELAS LOGIN ---
     window.autoCPF = () => {
         let c = dadosGlobal.clientes.find(x => x.nome === document.getElementById('clienteSel').value);
         document.getElementById('cpf').value = c ? c.doc : '';
@@ -862,17 +1290,30 @@ input:focus, select:focus { border-color: var(--primary); }
 
     window.abrirCadastro = () => {
         document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mudarSenhaScreen').style.display = 'none';
         document.getElementById('cadastroScreen').style.display = 'flex';
     };
 
+    window.abrirMudarSenha = () => {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('cadastroScreen').style.display = 'none';
+        document.getElementById('mudarSenhaScreen').style.display = 'flex';
+    }
+
     window.voltarLogin = () => {
         document.getElementById('cadastroScreen').style.display = 'none';
+        document.getElementById('mudarSenhaScreen').style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
+        
         document.getElementById('novoUser').value = '';
         document.getElementById('novaSenha').value = '';
         document.getElementById('empresaSelect').value = '';
         document.getElementById('empresa').value = '';
         document.getElementById('empresa').style.display = 'none';
+        
+        document.getElementById('msUser').value = '';
+        document.getElementById('msOld').value = '';
+        document.getElementById('msNew').value = '';
     };
 
     window.verificarNovaEmpresa = () => {
