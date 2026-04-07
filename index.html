@@ -46,6 +46,10 @@ input:focus, select:focus { border-color: var(--primary); }
 .menu button i { margin-right: 10px; }
 .menu button:hover{background:#fff;color:#000}
 
+/* AJUSTE NO BOTÃO SAIR - PRETO TOTAL */
+.btn-sair { margin-top:auto; background: #000 !important; color: #fff !important; border: 2px solid #000 !important; }
+.btn-sair:hover { background: #1a1a1a !important; border-color: #1a1a1a !important; }
+
 .submenu{ width:260px; background:var(--card); padding:20px; border-right:1px solid #333; overflow-y: auto;}
 .main{flex:1;padding:30px;overflow-y:auto; background: #161616;}
 
@@ -147,17 +151,17 @@ input:focus, select:focus { border-color: var(--primary); }
     <div class="container">
         <div class="sidebar">
             <div class="logo-sidebar">MENU</div>
-            <div class="menu">
+            <div class="menu" style="display: flex; flex-direction: column; height: 100%;">
                 <button onclick="mostrar('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</button>
                 <button onclick="mostrar('clientes')"><i class="fa-solid fa-users"></i> Clientes</button>
                 <button onclick="mostrar('vendas')"><i class="fa-solid fa-cart-shopping"></i> Vendas</button>
                 <button onclick="mostrar('credito')"><i class="fa-solid fa-hand-holding-dollar"></i> Crédito</button>
                 
-                <button id="btnUsuarios" onclick="mostrar('usuarios')" style="display:none; background: #FFD600; color: #000; font-weight:bold; margin-top: 15px;">
-                    <i class="fa-solid fa-user-shield"></i> Desenvolvedor
+                <button id="btnUsuarios" onclick="mostrar('usuarios')" style="display:none; background: #000; color: #fff; font-weight:bold; margin-top: 15px;">
+                    <i class="fa-solid fa-user-shield" style="color:var(--primary)"></i> Desenvolvedor
                 </button>
 
-                <button onclick="location.reload()" style="margin-top:auto; background: rgba(255,255,255,0.05); color: #ccc;"><i class="fa-solid fa-door-open"></i> Sair</button>
+                <button onclick="location.reload()" class="btn-sair"><i class="fa-solid fa-door-open"></i> Sair</button>
             </div>
         </div>
         <div class="submenu" id="submenu"></div>
@@ -602,7 +606,8 @@ input:focus, select:focus { border-color: var(--primary); }
                 
                 let trs = listaUsuarios.map(u => {
                     let corBg = u.statusAcesso === 'permitido' ? '#4CAF50' : (u.statusAcesso === 'negado' ? '#F44336' : '#FFD600');
-                    let corTexto = u.statusAcesso === 'pendente' ? '#000' : '#fff'; // Ajuste de cor para o amarelo do pendente
+                    // AJUSTE DE CONTRASTE: Se for amarelo (#FFD600) ou pendente, o texto DEVE ser preto (#000)
+                    let corTexto = (u.statusAcesso === 'pendente' || corBg === '#FFD600') ? '#000' : '#fff';
                     
                     return `
                     <tr>
@@ -784,11 +789,16 @@ input:focus, select:focus { border-color: var(--primary); }
 
         if(tela === 'credito') {
             submenu.innerHTML = `<h3>Créditos</h3><p style="color:#aaa; font-size:13px;">Gestão de parcelamentos.</p>`;
-            let vCredito = dadosGlobal.vendas.filter(v => v.tipo === 'Crédito');
+            
+            // Mapeamos as vendas de crédito salvando o índice original para permitir edição/exclusão correta
+            let vCredito = dadosGlobal.vendas
+                .map((v, idx) => ({ ...v, originalIdx: idx }))
+                .filter(v => v.tipo === 'Crédito');
+
             conteudo.innerHTML = `<h2>Controle de Parcelas</h2>
                 <div class="tabela-container">
                     <table class="tabela">
-                        <thead><tr><th>Cliente</th><th>Total</th><th>Restante</th><th>Parcelas</th><th>Vencimento</th></tr></thead>
+                        <thead><tr><th>Cliente</th><th>Total</th><th>Restante</th><th>Parcelas</th><th>Vencimento</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
                             ${vCredito.map(v => `<tr>
                                 <td><strong>${v.cliente}</strong></td>
@@ -796,6 +806,11 @@ input:focus, select:focus { border-color: var(--primary); }
                                 <td style="color:#F44336; font-weight:bold;">${v.restante}</td>
                                 <td>${v.parcelas}x</td>
                                 <td><span class="badge" style="background:#222; color:var(--primary);">${v.data ? v.data.split('-').reverse().join('/') : '-'}</span></td>
+                                ${isAdminMode ? `
+                                <td style="text-align:right;">
+                                    <button class="action-btn edit-btn" onclick="mostrar('vendas'); setTimeout(()=>editarVenda(${v.originalIdx}), 100)" title="Editar na aba Vendas"><i class="fa-solid fa-pen"></i></button>
+                                    <button class="action-btn del-btn" onclick="excluirVenda(${v.originalIdx})" title="Excluir Registro"><i class="fa-solid fa-trash"></i></button>
+                                </td>` : ''}
                             </tr>`).join('')}
                         </tbody>
                     </table>
