@@ -6,6 +6,7 @@
 <title>Excellent Gestão - Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 :root { --primary: #FFD600; --bg: #121212; --card: #1E1E1E; --input: #2A2A2A; --text: #fff; }
@@ -13,26 +14,25 @@
 body{height:100vh;background:var(--bg);color:var(--text);overflow: hidden;}
 
 /* ANIMAÇÃO DE BOAS-VINDAS */
-#welcomeOverlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: var(--bg); display: none; justify-content: center;
-    align-items: center; z-index: 1000; flex-direction: column;
-}
-.welcome-text { font-size: 2.5rem; font-weight: 600; opacity: 0; transform: translateY(20px); animation: fadeInUp 0.8s forwards; }
+#welcomeOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: none; justify-content: center; align-items: center; z-index: 1000; flex-direction: column; }
+.welcome-text { font-size: 2.5rem; font-weight: 600; opacity: 0; transform: translateY(20px); animation: fadeInUp 0.8s forwards; text-align: center;}
 .welcome-text span { color: var(--primary); }
 @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 .loader-line { width: 200px; height: 3px; background: #333; margin-top: 20px; border-radius: 10px; overflow: hidden; }
 .loader-line::after { content: ''; display: block; width: 100px; height: 100%; background: var(--primary); animation: loading 1.5s infinite linear; }
 @keyframes loading { from { margin-left: -100px; } to { margin-left: 200px; } }
 
-/* LOGIN */
+/* LOGIN & FORMS */
 .login{display:flex;justify-content:center;align-items:center;height:100vh}
-.card{background:var(--card);padding:25px;border-radius:12px;width:320px;box-shadow: 0 10px 30px rgba(0,0,0,0.5)}
-input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);border:none;color:#fff;border-radius:6px;outline: none;}
+.card{background:var(--card);padding:25px;border-radius:12px;width:320px;box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; z-index: 10;}
+input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);border:1px solid transparent;color:#fff;border-radius:6px;outline: none;}
+input:focus, select:focus { border-color: var(--primary); }
 
-.btn{margin-top:15px;padding:12px;width:100%;background:var(--primary);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold;transition: 0.3s;}
+.btn{margin-top:15px;padding:12px;width:100%;background:var(--primary);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold;transition: 0.3s; display:flex; justify-content:center; align-items:center; gap:8px;}
 .btn:hover{filter: brightness(1.2); transform: scale(1.02);}
 .btn-red { background: #F44336; color: white; }
+.btn-green { background: #4CAF50; color: white; }
+.btn-dark { background: #444; color: white; }
 
 /* APP LAYOUT */
 .app{display:none;height:100vh;flex-direction: column;}
@@ -49,21 +49,23 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
 .submenu{ width:260px; background:var(--card); padding:20px; border-right:1px solid #333; overflow-y: auto;}
 .main{flex:1;padding:30px;overflow-y:auto; background: #161616;}
 
-/* MODAL / POPUP */
-.overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 200; display: none; align-items: center; justify-content: center; }
-.popup-config { background: var(--card); padding: 30px; border-radius: 15px; width: 350px; border: 1px solid var(--primary); }
+/* MODAL / POPUP CUSTOMIZADOS */
+.overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.popup-config { background: var(--card); padding: 30px; border-radius: 15px; width: 350px; border: 1px solid var(--primary); text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.6); animation: scaleIn 0.3s ease-out; }
+@keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 /* TABELAS */
 .tabela-container { width: 100%; overflow-x: auto; margin-top: 20px; background: var(--card); border-radius: 8px; padding: 15px; }
 .tabela { width: 100%; border-collapse: collapse; text-align: left; }
-.tabela th { color: var(--primary); padding: 12px; border-bottom: 1px solid #333; }
-.tabela td { padding: 12px; border-bottom: 1px solid #444; font-size: 14px; }
-.action-btn { padding: 5px 10px; border-radius: 5px; cursor: pointer; border: none; margin-right: 5px; font-size: 12px; }
+.tabela th { color: var(--primary); padding: 12px; border-bottom: 1px solid #333; font-weight: 600; }
+.tabela td { padding: 12px; border-bottom: 1px solid #333; font-size: 14px; vertical-align: middle; }
+.action-btn { padding: 8px 12px; border-radius: 6px; cursor: pointer; border: none; margin-right: 5px; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; transition: 0.2s;}
+.action-btn:hover { filter: brightness(1.2); }
 .edit-btn { background: #2196F3; color: white; }
 .del-btn { background: #F44336; color: white; }
 
-/* BADGES */
-.badge { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+/* BADGES & UTILS */
+.badge { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; border: none; outline: none; cursor:pointer;}
 .andamento { background: #FFA500; color: #000; }
 .finalizado { background: #4CAF50; color: #fff; }
 .cancelado { background: #F44336; color: #fff; }
@@ -71,10 +73,21 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
 .config-icon { font-size: 20px; cursor: pointer; color: var(--primary); transition: 0.5s; }
 .config-icon:hover { transform: rotate(90deg); }
 .admin-badge { background: #FFD600; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 10px; display: none;}
+.status-select { padding: 5px; border-radius: 5px; font-size: 12px; font-weight: bold; border: none; cursor: pointer;}
+.dashboard-chart-container { background: var(--card); border-radius: 12px; padding: 20px; margin-top: 20px; border: 1px solid #333; height: 350px;}
 </style>
 </head>
 
 <body>
+
+<div class="overlay" id="customAlertOverlay" style="z-index: 400;">
+    <div class="popup-config" id="customAlertBox">
+        <div id="customAlertIcon" style="font-size: 45px; margin-bottom: 15px;"></div>
+        <h3 id="customAlertTitle"></h3>
+        <p id="customAlertMsg" style="margin: 15px 0; font-size: 14px; color: #ccc; line-height: 1.5;"></p>
+        <div id="customAlertButtons" style="display:flex; gap:10px; justify-content:center; margin-top: 20px;"></div>
+    </div>
+</div>
 
 <div id="welcomeOverlay">
     <div class="welcome-text">Bem vindo(a) a <span>EXCEL</span>LENT GESTÃO</div>
@@ -83,7 +96,10 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
 
 <div class="login" id="loginScreen">
     <div class="card">
-        <h2 style="text-align: center; margin-bottom: 20px;">Acesso</h2>
+        <div style="text-align: center; margin-bottom: 25px;">
+            <i class="fa-solid fa-chart-pie" style="font-size: 40px; color: var(--primary); margin-bottom: 10px;"></i>
+            <h2>Acesso Restrito</h2>
+        </div>
         <input id="user" placeholder="Usuário">
         <input id="pass" type="password" placeholder="Senha">
         <button class="btn" onclick="login()">Entrar</button>
@@ -94,33 +110,38 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
 <div class="login" id="cadastroScreen" style="display:none">
     <div class="card">
         <h2>Cadastro</h2>
-        <input id="novoUser" placeholder="Usuário">
+        <input id="novoUser" placeholder="Novo Usuário">
         <input id="novaSenha" type="password" placeholder="Senha">
-        <input id="empresa" placeholder="Empresa">
-        <input id="regiao" placeholder="Região">
+        
+        <select id="empresaSelect" onchange="verificarNovaEmpresa()">
+            <option value="">Selecione a Empresa...</option>
+            <option value="NOVA_EMPRESA">+ Adicionar Nova Empresa</option>
+        </select>
+        <input id="empresa" placeholder="Nome da Nova Empresa" style="display:none">
+        
         <button class="btn" onclick="cadastrar()">Solicitar Acesso</button>
-        <button class="btn" style="background:#444; color:#fff" onclick="location.reload()">Voltar</button>
+        <button class="btn btn-dark" onclick="voltarLogin()">Voltar</button>
     </div>
 </div>
 
 <div class="overlay" id="overlayConfig">
     <div class="popup-config">
         <h3 id="adminTitle">Autenticação Admin</h3>
+        <p style="font-size: 12px; color: #aaa; margin-top: 5px; margin-bottom: 15px;">Insira a senha master da sua empresa para liberar edições.</p>
         <div id="adminForm">
-            <input id="adminUser" placeholder="Usuário Admin">
-            <input id="adminPass" type="password" placeholder="Senha">
+            <input id="adminPass" type="password" placeholder="Senha Administrativa">
             <button class="btn" onclick="authAdmin()">Liberar Edição</button>
         </div>
-        <button class="btn btn-red" onclick="fecharConfig()">Fechar</button>
+        <button class="btn btn-red" onclick="fecharConfig()" style="margin-top: 10px;">Cancelar</button>
     </div>
 </div>
 
 <div class="app" id="app">
     <div class="topbar">
         <div style="display:flex; align-items: center;">
-            <span style="font-weight: 600; letter-spacing: 1px;">EXCELLENT <span id="adminTag" class="admin-badge">MODO ADMIN</span></span>
+            <span style="font-weight: 600; letter-spacing: 1px;">EXCELLENT <span id="adminTag" class="admin-badge">MODO EDIÇÃO / ADMIN</span></span>
         </div>
-        <i class="fa-solid fa-gear config-icon" onclick="abrirConfig()"></i>
+        <i class="fa-solid fa-gear config-icon" onclick="abrirConfig()" title="Configurações / Liberação"></i>
     </div>
     
     <div class="container">
@@ -131,7 +152,12 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
                 <button onclick="mostrar('clientes')"><i class="fa-solid fa-users"></i> Clientes</button>
                 <button onclick="mostrar('vendas')"><i class="fa-solid fa-cart-shopping"></i> Vendas</button>
                 <button onclick="mostrar('credito')"><i class="fa-solid fa-hand-holding-dollar"></i> Crédito</button>
-                <button onclick="location.reload()" style="margin-top:auto; background: rgba(255,255,255,0.1); color: #000;"><i class="fa-solid fa-door-open"></i> Sair</button>
+                
+                <button id="btnUsuarios" onclick="mostrar('usuarios')" style="display:none; background: #FFD600; color: #000; font-weight:bold; margin-top: 15px;">
+                    <i class="fa-solid fa-user-shield"></i> Desenvolvedor
+                </button>
+
+                <button onclick="location.reload()" style="margin-top:auto; background: rgba(255,255,255,0.05); color: #ccc;"><i class="fa-solid fa-door-open"></i> Sair</button>
             </div>
         </div>
         <div class="submenu" id="submenu"></div>
@@ -157,79 +183,208 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
     const db = getDatabase(firebaseApp);
 
     let usuarios = {};
+    let empresasConfigs = {};
     let dadosGlobal = { clientes: [], vendas: [] };
-    let chave = '';
+    let chave = ''; 
     let isAdminMode = false;
-    let editIndex = -1;
+    let usuarioLogado = ''; 
+    let telaAtual = 'dashboard';
+    let chartInstance = null;
+    
+    let editClienteIndex = -1;
+    let editVendaIndex = -1;
 
-    onValue(ref(db, 'usuarios'), (snapshot) => { usuarios = snapshot.val() || {}; });
+    // --- SISTEMA DE ALERTAS CUSTOMIZADOS ---
+    window.uiAlerta = (msg, tipo = 'aviso') => {
+        const overlay = document.getElementById('customAlertOverlay');
+        const box = document.getElementById('customAlertBox');
+        const title = document.getElementById('customAlertTitle');
+        const icon = document.getElementById('customAlertIcon');
+        const p = document.getElementById('customAlertMsg');
+        const btns = document.getElementById('customAlertButtons');
 
-    // --- SISTEMA DE LOGIN ---
-    window.login = () => {
-        const u = document.getElementById('user').value;
-        const p = document.getElementById('pass').value;
+        let cor = '#FFD600'; let icone = 'fa-triangle-exclamation'; let titulo = 'Atenção'; let txtColor = '#000';
+        if(tipo === 'erro') { cor = '#F44336'; icone = 'fa-circle-xmark'; titulo = 'Erro'; txtColor = '#fff'; }
+        if(tipo === 'sucesso') { cor = '#4CAF50'; icone = 'fa-circle-check'; titulo = 'Sucesso'; txtColor = '#fff'; }
+        if(tipo === 'bloqueio') { cor = '#F44336'; icone = 'fa-lock'; titulo = 'Acesso Negado'; txtColor = '#fff'; }
 
-        if((u === 'admin' && p === '123') || (usuarios[u] && usuarios[u].senha === p)){
-            chave = u === 'admin' ? 'admin' : usuarios[u].empresa + '_' + usuarios[u].regiao;
-            
-            document.getElementById('loginScreen').style.display = 'none';
-            const overlay = document.getElementById('welcomeOverlay');
-            overlay.style.display = 'flex';
-            
-            setTimeout(() => {
-                overlay.style.display = 'none';
-                document.getElementById('app').style.display = 'flex';
-                conectarDados();
-            }, 2500);
-        } else { alert('Acesso negado'); }
+        icon.innerHTML = `<i class="fa-solid ${icone}" style="color: ${cor}"></i>`;
+        title.style.color = cor;
+        title.innerText = titulo;
+        p.innerText = msg;
+        box.style.borderColor = cor;
+
+        btns.innerHTML = `<button class="btn" style="background:${cor}; color:${txtColor};" onclick="document.getElementById('customAlertOverlay').style.display='none'">OK</button>`;
+        overlay.style.display = 'flex';
     };
 
+    window.uiConfirmar = (msg, callback) => {
+        const overlay = document.getElementById('customAlertOverlay');
+        const title = document.getElementById('customAlertTitle');
+        const icon = document.getElementById('customAlertIcon');
+        const p = document.getElementById('customAlertMsg');
+        const btns = document.getElementById('customAlertButtons');
+
+        icon.innerHTML = `<i class="fa-solid fa-circle-question" style="color: #2196F3"></i>`;
+        title.style.color = '#2196F3';
+        title.innerText = 'Confirmação';
+        p.innerText = msg;
+        document.getElementById('customAlertBox').style.borderColor = '#2196F3';
+
+        btns.innerHTML = `
+            <button class="btn btn-red" style="width: 100px;" onclick="document.getElementById('customAlertOverlay').style.display='none'">Cancelar</button>
+            <button class="btn" style="width: 100px; background: #2196F3; color: white;" id="btnConfirmaAcao">Sim</button>
+        `;
+        
+        document.getElementById('btnConfirmaAcao').onclick = () => {
+            overlay.style.display = 'none';
+            callback();
+        };
+        overlay.style.display = 'flex';
+    };
+
+
+    // Leituras Firebase
+    onValue(ref(db, 'usuarios'), (snapshot) => { 
+        usuarios = snapshot.val() || {}; 
+        atualizarSelectEmpresas();
+        if(telaAtual === 'usuarios') mostrar('usuarios');
+    });
+
+    onValue(ref(db, 'empresas'), (snapshot) => {
+        empresasConfigs = snapshot.val() || {};
+        atualizarSelectEmpresas();
+        if(telaAtual === 'usuarios') mostrar('usuarios');
+    });
+
+    function atualizarSelectEmpresas() {
+        const select = document.getElementById('empresaSelect');
+        if(!select) return;
+        
+        let empresasUnicas = Object.keys(empresasConfigs);
+        Object.values(usuarios).forEach(u => {
+            if(u.empresa && !empresasUnicas.includes(u.empresa)) empresasUnicas.push(u.empresa);
+        });
+
+        let html = `<option value="">Selecione a Empresa...</option>`;
+        empresasUnicas.forEach(emp => {
+            html += `<option value="${emp}">${emp}</option>`;
+        });
+        html += `<option value="NOVA_EMPRESA">+ Adicionar Nova Empresa</option>`;
+        select.innerHTML = html;
+    }
+
+    // --- LOGIN ---
+    window.login = () => {
+        const u = document.getElementById('user').value.trim();
+        const p = document.getElementById('pass').value;
+
+        if (u === 'DESENVOLVEDOR' && p === '1709') {
+            chave = 'admin_desenvolvedor';
+            usuarioLogado = 'DESENVOLVEDOR';
+            document.getElementById('btnUsuarios').style.display = 'block';
+            iniciarApp();
+            return;
+        }
+
+        if (usuarios[u] && usuarios[u].senha === p) {
+            let status = usuarios[u].statusAcesso || 'pendente';
+            
+            if (status !== 'permitido') {
+                let msg = status === 'pendente' 
+                    ? "Seu cadastro está em análise. Aguarde a liberação do desenvolvedor." 
+                    : "Seu acesso foi revogado pelo administrador.";
+                uiAlerta(msg, 'bloqueio');
+                return;
+            }
+
+            chave = usuarios[u].empresa.replace(/\s+/g, '_').toLowerCase();
+            usuarioLogado = u;
+            document.getElementById('btnUsuarios').style.display = 'none';
+            iniciarApp();
+        } else { 
+            uiAlerta('Usuário ou senha incorretos!', 'erro'); 
+        }
+    };
+
+    function iniciarApp() {
+        document.getElementById('loginScreen').style.display = 'none';
+        const overlay = document.getElementById('welcomeOverlay');
+        overlay.style.display = 'flex';
+        
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+            conectarDados();
+        }, 2000);
+    }
+
     function conectarDados() {
+        if(chave === 'admin_desenvolvedor') {
+            dadosGlobal = { clientes: [], vendas: [] };
+            mostrar('usuarios'); 
+            return;
+        }
+
         onValue(ref(db, 'dados/' + chave), (snapshot) => {
             dadosGlobal = snapshot.val() || { clientes: [], vendas: [] };
             if(!dadosGlobal.clientes) dadosGlobal.clientes = [];
             if(!dadosGlobal.vendas) dadosGlobal.vendas = [];
-            mostrar('dashboard');
+            mostrar(telaAtual);
         });
     }
 
     // --- CONFIGURAÇÕES & ADMIN ---
     window.abrirConfig = () => {
-        if(isAdminMode) {
-            isAdminMode = false;
-            document.getElementById('adminTag').style.display = 'none';
-            mostrar('clientes');
+        if (usuarioLogado === 'DESENVOLVEDOR') {
+            isAdminMode = !isAdminMode;
+            document.getElementById('adminTag').style.display = isAdminMode ? 'inline-block' : 'none';
+            mostrar(telaAtual); 
             return;
         }
+
+        if (isAdminMode) {
+            isAdminMode = false;
+            document.getElementById('adminTag').style.display = 'none';
+            mostrar(telaAtual);
+            return;
+        }
+        
+        document.getElementById('adminPass').value = '';
         document.getElementById('overlayConfig').style.display = 'flex';
     };
 
     window.fecharConfig = () => { document.getElementById('overlayConfig').style.display = 'none'; };
 
     window.authAdmin = () => {
-        const u = document.getElementById('adminUser').value;
         const p = document.getElementById('adminPass').value;
-        if(u === 'admin' && p === '1709') {
+        const nomeEmpresa = usuarios[usuarioLogado].empresa;
+        const senhaCorreta = empresasConfigs[nomeEmpresa] ? empresasConfigs[nomeEmpresa].senhaAdmin : 'admin123'; 
+        
+        if (p === senhaCorreta) {
             isAdminMode = true;
             document.getElementById('adminTag').style.display = 'inline-block';
             fecharConfig();
-            mostrar('clientes');
-            alert('Modo Administrador Ativado!');
-        } else { alert('Admin Inválido'); }
+            mostrar(telaAtual);
+        } else { 
+            uiAlerta('Senha de liberação incorreta!', 'erro'); 
+        }
     };
 
-    // --- CLIENTES (CRUD) ---
+    // --- CLIENTES ---
     window.salvarCliente = () => {
         const n = document.getElementById('nome').value;
         const c = document.getElementById('cel').value;
         const d = document.getElementById('doc').value;
-        if(!n) return alert("Nome é obrigatório");
+        if(!n || !c) return uiAlerta("Nome e Telefone são obrigatórios.", "aviso");
 
-        if(editIndex > -1) {
-            dadosGlobal.clientes[editIndex] = {nome:n, cel:c, doc:d};
-            editIndex = -1;
+        if(editClienteIndex > -1) {
+            dadosGlobal.clientes[editClienteIndex] = {nome:n, cel:c, doc:d};
+            editClienteIndex = -1;
+            uiAlerta("Cliente atualizado com sucesso!", "sucesso");
         } else {
             dadosGlobal.clientes.push({nome:n, cel:c, doc:d});
+            uiAlerta("Cliente salvo com sucesso!", "sucesso");
         }
         
         set(ref(db, 'dados/' + chave), dadosGlobal);
@@ -241,25 +396,31 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
         document.getElementById('nome').value = cli.nome;
         document.getElementById('cel').value = cli.cel;
         document.getElementById('doc').value = cli.doc;
-        editIndex = i;
-        document.querySelector('.submenu .btn').innerText = "Atualizar Cliente";
+        editClienteIndex = i;
+        document.querySelector('.submenu .btn').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Cliente';
     };
 
     window.excluirCliente = (i) => {
-        if(confirm("Deseja realmente excluir este cliente?")) {
+        uiConfirmar("Deseja realmente excluir este cliente permanentemente?", () => {
             dadosGlobal.clientes.splice(i, 1);
             set(ref(db, 'dados/' + chave), dadosGlobal);
-        }
+        });
     };
 
     // --- VENDAS ---
+    window.hojeInput = () => {
+        const hj = new Date();
+        return hj.toISOString().split('T')[0];
+    }
+
     window.salvarVenda = () => {
         const cli = document.getElementById('clienteSel').value;
-        if(!cli) return alert("Selecione um cliente");
+        if(!cli) return uiAlerta("Por favor, selecione um cliente.", "aviso");
 
         let v = {
             cliente: cli,
             cpf: document.getElementById('cpf').value,
+            dataVenda: document.getElementById('dataVenda').value, // Nova data
             valor: document.getElementById('valor').value,
             entrada: document.getElementById('entrada').value,
             tipo: document.getElementById('tipo').value,
@@ -271,9 +432,49 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
             data: document.getElementById('data')?.value || ''
         };
 
-        dadosGlobal.vendas.push(v);
+        if (editVendaIndex > -1) {
+            dadosGlobal.vendas[editVendaIndex] = v;
+            editVendaIndex = -1;
+            uiAlerta("Venda atualizada!", "sucesso");
+        } else {
+            dadosGlobal.vendas.push(v);
+            uiAlerta("Venda registrada com sucesso!", "sucesso");
+        }
+        
         set(ref(db, 'dados/' + chave), dadosGlobal);
         mostrar('vendas');
+    };
+
+    window.editarVenda = (i) => {
+        const v = dadosGlobal.vendas[i];
+        document.getElementById('clienteSel').value = v.cliente;
+        document.getElementById('cpf').value = v.cpf;
+        document.getElementById('dataVenda').value = v.dataVenda || window.hojeInput();
+        document.getElementById('valor').value = v.valor;
+        document.getElementById('entrada').value = v.entrada;
+        document.getElementById('tipo').value = v.tipo;
+        window.verCredito(); 
+        document.getElementById('status').value = v.status;
+        document.getElementById('etapa').value = v.etapa;
+        
+        if(v.tipo === 'Crédito') {
+            setTimeout(() => {
+                document.getElementById('taxa').value = v.taxa;
+                document.getElementById('parcelas').value = v.parcelas;
+                document.getElementById('restante').value = v.restante;
+                document.getElementById('data').value = v.data;
+            }, 50);
+        }
+        
+        editVendaIndex = i;
+        document.querySelector('.submenu .btn').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Venda';
+    };
+
+    window.excluirVenda = (i) => {
+        uiConfirmar("Deseja deletar este registro de venda?", () => {
+            dadosGlobal.vendas.splice(i, 1);
+            set(ref(db, 'dados/' + chave), dadosGlobal);
+        });
     };
 
     window.mudarStatusVenda = (index, novoStatus) => {
@@ -281,50 +482,218 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
         set(ref(db, 'dados/' + chave), dadosGlobal);
     };
 
+    // --- DEV GESTÃO ---
+    window.atualizarAcesso = (user, novoStatus) => {
+        set(ref(db, `usuarios/${user}/statusAcesso`), novoStatus);
+    };
+
+    window.atualizarSenhaAdmin = (empresa, input) => {
+        set(ref(db, `empresas/${empresa}/senhaAdmin`), input.value)
+        .then(() => uiAlerta(`Senha master de ${empresa} atualizada!`, 'sucesso'));
+    };
+
+    window.excluirUsuario = (nick) => {
+        uiConfirmar(`Remover permanentemente o usuário '${nick}' do sistema?`, () => {
+            remove(ref(db, `usuarios/${nick}`));
+        });
+    }
+
+    // --- CHART JS (POWER BI STYLE) ---
+    window.renderDashboardChart = () => {
+        const ctx = document.getElementById('vendasChart');
+        if(!ctx) return;
+        
+        if(chartInstance) chartInstance.destroy();
+
+        // Agrupar dados por data
+        let faturamentoPorData = {};
+        dadosGlobal.vendas.forEach(v => {
+            if(v.status === 'Cancelado') return; // Ignora canceladas
+            let data = v.dataVenda || 'Sem Data';
+            let valorNum = parseFloat(v.valor.replace(/\D/g, '')) / 100 || 0;
+            
+            if(!faturamentoPorData[data]) faturamentoPorData[data] = 0;
+            faturamentoPorData[data] += valorNum;
+        });
+
+        // Ordenar datas
+        let datasOrdenadas = Object.keys(faturamentoPorData).sort();
+        let valores = datasOrdenadas.map(d => faturamentoPorData[d]);
+
+        // Formatar datas para exibição (DD/MM)
+        let labelsFormatadas = datasOrdenadas.map(d => {
+            if(d === 'Sem Data') return d;
+            let parts = d.split('-');
+            if(parts.length === 3) return `${parts[2]}/${parts[1]}`;
+            return d;
+        });
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labelsFormatadas,
+                datasets: [{
+                    label: 'Faturamento Bruto',
+                    data: valores,
+                    borderColor: '#FFD600',
+                    backgroundColor: 'rgba(255, 214, 0, 0.15)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#FFD600',
+                    pointBorderColor: '#1E1E1E',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: true,
+                    tension: 0.4 // Linha suave
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                color: '#aaa',
+                plugins: {
+                    legend: { labels: { color: '#fff', font: { family: 'Poppins' } } },
+                    tooltip: {
+                        backgroundColor: '#000',
+                        titleFont: { family: 'Poppins' },
+                        bodyFont: { family: 'Poppins' },
+                        callbacks: {
+                            label: function(context) {
+                                let value = context.parsed.y;
+                                return ' R$ ' + value.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: '#333' }, ticks: { color: '#aaa', font: { family: 'Poppins' } } },
+                    y: { 
+                        grid: { color: '#333' }, 
+                        ticks: { 
+                            color: '#aaa', 
+                            font: { family: 'Poppins' },
+                            callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); }
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
     // --- INTERFACE DINÂMICA ---
     window.mostrar = (tela) => {
+        telaAtual = tela;
         const submenu = document.getElementById('submenu');
         const conteudo = document.getElementById('conteudo');
 
+        if(tela === 'usuarios' && usuarioLogado === 'DESENVOLVEDOR') {
+            submenu.innerHTML = `<h3>Master Hub</h3><p style="font-size:13px; color:#aaa;">Controle de acesso e senhas empresariais.</p>`;
+            
+            let htmlUsuarios = '';
+            let empresasMap = {};
+
+            Object.entries(usuarios).forEach(([nick, dados]) => {
+                if(!empresasMap[dados.empresa]) empresasMap[dados.empresa] = [];
+                empresasMap[dados.empresa].push({nick, ...dados});
+            });
+
+            htmlUsuarios = Object.entries(empresasMap).map(([empresaNome, listaUsuarios]) => {
+                let sAdmin = empresasConfigs[empresaNome]?.senhaAdmin || '';
+                
+                let trs = listaUsuarios.map(u => {
+                    let corBg = u.statusAcesso === 'permitido' ? '#4CAF50' : (u.statusAcesso === 'negado' ? '#F44336' : '#FFD600');
+                    let corTexto = u.statusAcesso === 'pendente' ? '#000' : '#fff'; // Ajuste de cor para o amarelo do pendente
+                    
+                    return `
+                    <tr>
+                        <td><b style="color:var(--primary)">@</b>${u.nick}</td>
+                        <td>
+                            <select class="status-select" onchange="window.atualizarAcesso('${u.nick}', this.value)" style="background: ${corBg}; color: ${corTexto};">
+                                <option value="pendente" style="background:#333; color:#fff;" ${u.statusAcesso === 'pendente'?'selected':''}>Pendente</option>
+                                <option value="permitido" style="background:#333; color:#fff;" ${u.statusAcesso === 'permitido'?'selected':''}>Permitido</option>
+                                <option value="negado" style="background:#333; color:#fff;" ${u.statusAcesso === 'negado'?'selected':''}>Negado</option>
+                            </select>
+                        </td>
+                        <td>${u.senha}</td>
+                        ${isAdminMode ? `<td style="text-align:right;"><button class="action-btn del-btn" onclick="window.excluirUsuario('${u.nick}')"><i class="fa-solid fa-trash"></i></button></td>` : ''}
+                    </tr>`;
+                }).join('');
+
+                return `
+                <div style="background: #1A1A1A; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom:10px;">
+                        <h3 style="color: var(--text); font-weight: 600;"><i class="fa-solid fa-building" style="color:var(--primary); margin-right:8px;"></i> ${empresaNome}</h3>
+                        <div style="display:flex; align-items:center; gap: 10px; background: #2A2A2A; padding: 5px 15px; border-radius: 8px;">
+                            <i class="fa-solid fa-key" style="color:var(--primary)"></i>
+                            <span style="font-size:12px; color:#aaa;">Senha Admin:</span>
+                            <input type="text" value="${sAdmin}" onchange="window.atualizarSenhaAdmin('${empresaNome}', this)" style="width: 100px; padding: 5px 10px; margin:0; background: transparent; border-bottom: 1px solid var(--primary); border-radius: 0; text-align: center;" placeholder="Vazia">
+                        </div>
+                    </div>
+                    <table class="tabela">
+                        <thead><tr><th>Usuário</th><th>Acesso</th><th>Senha</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
+                        <tbody>${trs}</tbody>
+                    </table>
+                </div>`;
+            }).join('');
+
+            conteudo.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2>Gestão de Usuários</h2>
+                </div>
+                <div style="margin-top:20px;">${htmlUsuarios || '<p style="color:#aaa;">Nenhum usuário cadastrado.</p>'}</div>`;
+            return;
+        }
+
         if(tela === 'clientes') {
+            editClienteIndex = -1;
             submenu.innerHTML = `
                 <h3>Novo Cliente</h3>
                 <input id="nome" placeholder="Nome Completo">
-                <input id="cel" placeholder="WhatsApp">
+                <input id="cel" placeholder="Telefone / WhatsApp">
                 <input id="doc" placeholder="CPF/CNPJ" oninput="window.mascaraDoc(this)" maxlength="18">
-                <button class="btn" onclick="salvarCliente()">Salvar Cliente</button>
+                <button class="btn" onclick="salvarCliente()"><i class="fa-solid fa-floppy-disk"></i> Salvar Cliente</button>
             `;
             conteudo.innerHTML = `
                 <h2>Gestão de Clientes</h2>
                 <div class="tabela-container">
                     <table class="tabela">
-                        <thead><tr><th>Nome</th><th>Contato</th><th>Documento</th>${isAdminMode ? '<th>Ações</th>' : ''}</tr></thead>
+                        <thead><tr><th>Nome</th><th>Documento</th><th>Contato Rapido</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
-                            ${dadosGlobal.clientes.map((c, i) => `
+                            ${dadosGlobal.clientes.map((c, i) => {
+                                let numLimpo = c.cel.replace(/\D/g, '');
+                                return `
                                 <tr>
-                                    <td>${c.nome}</td>
-                                    <td>${c.cel}</td>
-                                    <td>${c.doc}</td>
-                                    ${isAdminMode ? `
+                                    <td><strong style="color:var(--text);">${c.nome}</strong></td>
+                                    <td style="color:#aaa;">${c.doc || 'N/A'}</td>
                                     <td>
+                                        <div style="display:flex; gap: 8px;">
+                                            <a href="https://wa.me/55${numLimpo}" target="_blank" class="action-btn" style="background:#25D366; color:#fff; text-decoration:none;" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                                            <a href="tel:${numLimpo}" class="action-btn" style="background:#1E88E5; color:#fff; text-decoration:none;" title="Ligar"><i class="fa-solid fa-phone"></i></a>
+                                            <span style="display:inline-block; margin-left:5px; font-size:13px; color:#aaa; line-height:30px;">${c.cel}</span>
+                                        </div>
+                                    </td>
+                                    ${isAdminMode ? `
+                                    <td style="text-align:right;">
                                         <button class="action-btn edit-btn" onclick="editarCliente(${i})"><i class="fa-solid fa-pen"></i></button>
                                         <button class="action-btn del-btn" onclick="excluirCliente(${i})"><i class="fa-solid fa-trash"></i></button>
                                     </td>` : ''}
-                                </tr>
-                            `).join('')}
+                                </tr>`
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>`;
         }
 
         if(tela === 'vendas') {
+            editVendaIndex = -1;
             let options = dadosGlobal.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
             submenu.innerHTML = `
                 <h3>Lançar Venda</h3>
+                <input id="dataVenda" type="date" value="${window.hojeInput()}">
                 <select id="clienteSel" onchange="window.autoCPF()">
                     <option value="">Selecionar Cliente</option>${options}
                 </select>
-                <input id="cpf" placeholder="CPF/CNPJ" readonly>
+                <input id="cpf" placeholder="CPF/CNPJ" readonly style="background:#222;">
                 <input id="valor" placeholder="Valor Total" oninput="window.mascaraMoeda(this); window.calcularRestante()">
                 <input id="entrada" placeholder="Valor Entrada" oninput="window.mascaraMoeda(this); window.calcularRestante()">
                 <select id="tipo" onchange="window.verCredito()">
@@ -339,26 +708,33 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
                     <option>Ajuste</option><option>Desenvolvimento</option><option>Suporte</option>
                 </select>
                 <div id="extra"></div>
-                <button class="btn" onclick="salvarVenda()">Confirmar Venda</button>
+                <button class="btn" onclick="salvarVenda()"><i class="fa-solid fa-check-double"></i> Confirmar Venda</button>
             `;
             conteudo.innerHTML = `<h2>Histórico de Vendas</h2>
                 <div class="tabela-container">
                     <table class="tabela">
-                        <thead><tr><th>Cliente</th><th>Valor</th><th>Pagamento</th><th>Status</th></tr></thead>
+                        <thead><tr><th>Data</th><th>Cliente</th><th>Valor</th><th>Pagamento</th><th>Status</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
                             ${dadosGlobal.vendas.map((v, i) => {
                                 let cls = v.status === 'Em andamento' ? 'andamento' : (v.status === 'Finalizado' ? 'finalizado' : 'cancelado');
+                                let dExibicao = v.dataVenda ? v.dataVenda.split('-').reverse().join('/') : '-';
                                 return `<tr>
-                                    <td>${v.cliente}</td>
-                                    <td>${v.valor}</td>
+                                    <td style="color:#aaa; font-size:12px;">${dExibicao}</td>
+                                    <td><strong>${v.cliente}</strong></td>
+                                    <td style="color:var(--primary); font-weight:bold;">${v.valor}</td>
                                     <td>${v.tipo}</td>
                                     <td>
                                         <select class="badge ${cls}" onchange="window.mudarStatusVenda(${i}, this.value)">
-                                            <option value="Em andamento" ${v.status==='Em andamento'?'selected':''}>Em andamento</option>
-                                            <option value="Finalizado" ${v.status==='Finalizado'?'selected':''}>Finalizado</option>
-                                            <option value="Cancelado" ${v.status==='Cancelado'?'selected':''}>Cancelado</option>
+                                            <option value="Em andamento" style="background:#333; color:#fff;" ${v.status==='Em andamento'?'selected':''}>Em andamento</option>
+                                            <option value="Finalizado" style="background:#333; color:#fff;" ${v.status==='Finalizado'?'selected':''}>Finalizado</option>
+                                            <option value="Cancelado" style="background:#333; color:#fff;" ${v.status==='Cancelado'?'selected':''}>Cancelado</option>
                                         </select>
                                     </td>
+                                    ${isAdminMode ? `
+                                    <td style="text-align:right;">
+                                        <button class="action-btn edit-btn" onclick="editarVenda(${i})"><i class="fa-solid fa-pen"></i></button>
+                                        <button class="action-btn del-btn" onclick="excluirVenda(${i})"><i class="fa-solid fa-trash"></i></button>
+                                    </td>` : ''}
                                 </tr>`;
                             }).join('')}
                         </tbody>
@@ -367,24 +743,47 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
         }
         
         if(tela === 'dashboard') {
-            submenu.innerHTML = '<h3>Resumo Geral</h3><p>Visão rápida dos seus números hoje.</p>';
-            conteudo.innerHTML = `
-                <h2>Dashboard</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
-                    <div class="card" style="width: 100%; text-align: center;">
-                        <h4 style="color: #FFD600">Clientes</h4>
-                        <p style="font-size: 30px; font-weight: bold;">${dadosGlobal.clientes.length}</p>
-                    </div>
-                    <div class="card" style="width: 100%; text-align: center;">
-                        <h4 style="color: #FFD600">Vendas</h4>
-                        <p style="font-size: 30px; font-weight: bold;">${dadosGlobal.vendas.length}</p>
-                    </div>
+            submenu.innerHTML = `
+                <h3>Resumo Geral</h3>
+                <p style="color:#aaa; font-size:13px; margin-bottom:20px;">Métricas e acompanhamento de receita.</p>
+                <div class="card" style="width: 100%; text-align: center; margin-bottom: 15px; padding:15px; box-shadow:none; border:1px solid #333;">
+                    <h4 style="color: #aaa; font-weight:400; font-size:14px;">Total Clientes</h4>
+                    <p style="font-size: 28px; font-weight: bold; color:var(--text);">${dadosGlobal.clientes.length}</p>
+                </div>
+                <div class="card" style="width: 100%; text-align: center; padding:15px; box-shadow:none; border:1px solid #333;">
+                    <h4 style="color: #aaa; font-weight:400; font-size:14px;">Total Vendas</h4>
+                    <p style="font-size: 28px; font-weight: bold; color:var(--text);">${dadosGlobal.vendas.length}</p>
                 </div>
             `;
+            
+            // Calculo Dinâmico para Header do Dashboard
+            let faturamentoBruto = 0;
+            dadosGlobal.vendas.forEach(v => {
+                if(v.status !== 'Cancelado') {
+                    faturamentoBruto += parseFloat(v.valor.replace(/\D/g, '')) / 100 || 0;
+                }
+            });
+
+            conteudo.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                    <h2>Dashboard de Receitas</h2>
+                    <div style="text-align:right;">
+                        <span style="font-size:12px; color:#aaa;">Faturamento Bruto Total</span><br>
+                        <strong style="font-size:24px; color:var(--primary);">R$ ${faturamentoBruto.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
+                    </div>
+                </div>
+                
+                <div class="dashboard-chart-container">
+                    <canvas id="vendasChart"></canvas>
+                </div>
+            `;
+            
+            // Renderiza o Gráfico após a injeção do HTML
+            setTimeout(() => window.renderDashboardChart(), 50);
         }
 
         if(tela === 'credito') {
-            submenu.innerHTML = `<h3>Créditos</h3><p>Filtro de parcelamentos.</p>`;
+            submenu.innerHTML = `<h3>Créditos</h3><p style="color:#aaa; font-size:13px;">Gestão de parcelamentos.</p>`;
             let vCredito = dadosGlobal.vendas.filter(v => v.tipo === 'Crédito');
             conteudo.innerHTML = `<h2>Controle de Parcelas</h2>
                 <div class="tabela-container">
@@ -392,7 +791,11 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
                         <thead><tr><th>Cliente</th><th>Total</th><th>Restante</th><th>Parcelas</th><th>Vencimento</th></tr></thead>
                         <tbody>
                             ${vCredito.map(v => `<tr>
-                                <td>${v.cliente}</td><td>${v.valor}</td><td>${v.restante}</td><td>${v.parcelas}x</td><td>${v.data}</td>
+                                <td><strong>${v.cliente}</strong></td>
+                                <td style="color:#aaa;">${v.valor}</td>
+                                <td style="color:#F44336; font-weight:bold;">${v.restante}</td>
+                                <td>${v.parcelas}x</td>
+                                <td><span class="badge" style="background:#222; color:var(--primary);">${v.data ? v.data.split('-').reverse().join('/') : '-'}</span></td>
                             </tr>`).join('')}
                         </tbody>
                     </table>
@@ -400,7 +803,7 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
         }
     };
 
-    // --- UTILITÁRIOS ---
+    // --- UTILITÁRIOS & CADASTRO ---
     window.autoCPF = () => {
         let c = dadosGlobal.clientes.find(x => x.nome === document.getElementById('clienteSel').value);
         document.getElementById('cpf').value = c ? c.doc : '';
@@ -410,10 +813,13 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
         let extra = document.getElementById('extra');
         if(document.getElementById('tipo').value === 'Crédito') {
             extra.innerHTML = `
-                <input id="taxa" placeholder="Taxa (R$)" oninput="window.mascaraMoeda(this); window.calcularRestante()">
-                <input id="parcelas" placeholder="Qtd Parcelas">
-                <input id="restante" placeholder="Resta Pagar" readonly>
-                <input id="data" type="date">`;
+                <input id="taxa" placeholder="Taxa/Juros (R$)" oninput="window.mascaraMoeda(this); window.calcularRestante()">
+                <div style="display:flex; gap:10px;">
+                    <input id="parcelas" placeholder="Qtd Parc." type="number" style="width:40%;">
+                    <input id="data" type="date" style="width:60%;" title="Data do 1º Vencimento">
+                </div>
+                <input id="restante" placeholder="Resta Pagar" readonly style="background:#222; color:#F44336; font-weight:bold;">
+                `;
         } else { extra.innerHTML = ''; }
     };
 
@@ -444,15 +850,45 @@ input,select{width:100%;padding:10px;margin-top:10px;background:var(--input);bor
         document.getElementById('cadastroScreen').style.display = 'flex';
     };
 
+    window.voltarLogin = () => {
+        document.getElementById('cadastroScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('novoUser').value = '';
+        document.getElementById('novaSenha').value = '';
+        document.getElementById('empresaSelect').value = '';
+        document.getElementById('empresa').value = '';
+        document.getElementById('empresa').style.display = 'none';
+    };
+
+    window.verificarNovaEmpresa = () => {
+        const sel = document.getElementById('empresaSelect').value;
+        document.getElementById('empresa').style.display = sel === 'NOVA_EMPRESA' ? 'block' : 'none';
+    };
+
     window.cadastrar = () => {
-        const u = document.getElementById('novoUser').value;
+        const u = document.getElementById('novoUser').value.trim();
         const p = document.getElementById('novaSenha').value;
-        if(!u || !p) return alert("Preencha os campos");
+        const selEmpresa = document.getElementById('empresaSelect').value;
+        let nomeEmpresa = selEmpresa;
+
+        if (selEmpresa === 'NOVA_EMPRESA') {
+            nomeEmpresa = document.getElementById('empresa').value.trim();
+        }
+
+        if(!u || !p || !nomeEmpresa) return uiAlerta("Preencha todos os campos corretamente para solicitar acesso.", "aviso");
+        
+        if(usuarios[u]) {
+            return uiAlerta(`O usuário "${u}" já existe. Escolha outro identificador.`, "erro");
+        }
+
         set(ref(db, 'usuarios/' + u), {
             senha: p,
-            empresa: document.getElementById('empresa').value,
-            regiao: document.getElementById('regiao').value
-        }).then(() => alert("Solicitação enviada!"));
+            empresa: nomeEmpresa,
+            statusAcesso: 'pendente' 
+        }).then(() => {
+            uiAlerta("Sua solicitação foi enviada! Aguarde a aprovação do Administrador.", "sucesso");
+            voltarLogin(); 
+        });
     };
 
 </script>
