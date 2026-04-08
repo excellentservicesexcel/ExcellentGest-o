@@ -46,7 +46,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 .menu button i { margin-right: 10px; }
 .menu button:hover{background:#fff;color:#000}
 
-/* AJUSTE NO BOTÃO SAIR */
 .btn-sair { margin-top:auto; background: #000 !important; color: #fff !important; border: 2px solid #000 !important; }
 .btn-sair:hover { background: #1a1a1a !important; border-color: #1a1a1a !important; }
 
@@ -88,10 +87,37 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 
 .input-inline { background: transparent; border: 1px solid transparent; color: #fff; border-bottom: 1px solid #555; border-radius: 0; padding: 5px; text-align: center; width: 60px; font-size: 13px; }
 .input-inline:focus { border-bottom: 1px solid var(--primary); }
+
+/* AJUSTES MOBILE CIRÚRGICOS */
+.btn-menu-mobile { display: none; font-size: 24px; color: var(--primary); cursor: pointer; margin-right: 15px; }
+.sidebar-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 40; backdrop-filter: blur(2px);}
+
+@media (max-width: 768px) {
+    body { overflow-y: auto; }
+    .btn-menu-mobile { display: inline-block; }
+    .container { flex-direction: column; overflow-y: auto; }
+    .sidebar { position: fixed; left: -260px; top: 0; height: 100%; z-index: 50; transition: left 0.3s ease; box-shadow: 2px 0 15px rgba(0,0,0,0.8); width: 250px; }
+    .sidebar.active { left: 0; }
+    .submenu { width: 100%; border-right: none; border-bottom: 1px solid #333; height: auto; max-height: 50vh; }
+    .main { width: 100%; flex: auto; height: auto; padding: 15px; overflow: visible; }
+    .topbar { padding: 0 15px; }
+}
+
+/* POPUP DESCRIÇÃO DE VENDAS */
+.popup-descricao {
+    position: absolute; display: none; background: #2A2A2A; border: 1px solid var(--primary);
+    padding: 15px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    z-index: 300; max-width: 320px; color: #ccc; font-size: 13px; line-height: 1.5;
+    animation: fadeInDesc 0.2s ease-out;
+}
+@keyframes fadeInDesc { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 </style>
 </head>
 
 <body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div id="popupDescricao" class="popup-descricao"></div>
 
 <div class="overlay" id="customAlertOverlay" style="z-index: 400;">
     <div class="popup-config" id="customAlertBox">
@@ -166,6 +192,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 <div class="app" id="app">
     <div class="topbar">
         <div style="display:flex; align-items: center;">
+            <i class="fa-solid fa-bars btn-menu-mobile" onclick="toggleSidebar(event)"></i>
             <span style="font-weight: 600; letter-spacing: 1px;">EXCELLENT <span id="adminTag" class="admin-badge">MODO EDIÇÃO / ADMIN</span></span>
         </div>
         <i class="fa-solid fa-gear config-icon" onclick="abrirConfig()" title="Configurações / Liberação"></i>
@@ -231,6 +258,50 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
     window.dashMesAtual = 'ALL';
     window.dashAnoAtual = new Date().getFullYear().toString();
 
+    // --- LÓGICA DO MENU MOBILE ---
+    window.toggleSidebar = (e) => {
+        if(e) e.stopPropagation();
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.toggle('active');
+        overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
+    };
+
+    // --- LÓGICA DO POPUP DE DESCRIÇÃO ---
+    window.showDesc = (e, tipoColecao, idx) => {
+        let target = e.target.tagName.toLowerCase();
+        if(['button', 'i', 'a', 'select'].includes(target)) return;
+
+        let obj = dadosGlobal[tipoColecao][idx];
+        if(!obj) return;
+        
+        let txt = obj.descricao || 'Nenhuma descrição registrada.';
+        txt = txt.replace(/\n/g, '<br>');
+
+        const popup = document.getElementById('popupDescricao');
+        popup.innerHTML = `<strong style="color:var(--primary); display:block; margin-bottom:8px;">Descrição da Venda:</strong>${txt}`;
+        popup.style.display = 'block';
+
+        let x = e.pageX + 15;
+        let y = e.pageY + 15;
+        if(x + 340 > window.innerWidth) x = window.innerWidth - 340; 
+        
+        popup.style.left = x + 'px';
+        popup.style.top = y + 'px';
+    };
+
+    // Fechar observações e popups clicando fora
+    document.addEventListener('click', (e) => {
+        if(!e.target.closest('.tabela-container')) {
+            document.querySelectorAll('.obs-row').forEach(r => r.style.display = 'none');
+        }
+        
+        const popup = document.getElementById('popupDescricao');
+        if (popup && popup.style.display === 'block' && !e.target.closest('tr') && !e.target.closest('.popup-descricao')) {
+            popup.style.display = 'none';
+        }
+    });
+
     // --- SISTEMA DE ALERTAS CUSTOMIZADOS ---
     window.uiAlerta = (msg, tipo = 'aviso') => {
         const overlay = document.getElementById('customAlertOverlay');
@@ -279,13 +350,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         };
         overlay.style.display = 'flex';
     };
-
-    // Fechar observação do Lead clicando fora
-    document.addEventListener('click', (e) => {
-        if(!e.target.closest('.tabela-container')) {
-            document.querySelectorAll('.obs-row').forEach(r => r.style.display = 'none');
-        }
-    });
 
     // Leituras Firebase
     onValue(ref(db, 'usuarios'), (snapshot) => { 
@@ -485,8 +549,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
     };
 
     window.editarCliente = (i) => {
-        // Redireciona edições leves se necessário, mas clientes já convertidos mantêm o fluxo básico
-        // Aqui usamos um prompt rápido apenas como contorno, já que o form está em leads.
         const c = dadosGlobal.clientes[i];
         let nEmpresa = prompt("Atualizar nome da Empresa:", c.empresa || "");
         if(nEmpresa !== null) {
@@ -517,7 +579,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             valor: document.getElementById('valor').value,
             entrada: document.getElementById('entrada').value,
             tipo: document.getElementById('tipo').value,
-            etapa: document.getElementById('etapa').value,
+            descricao: document.getElementById('descricao')?.value || '',
             taxa: document.getElementById('taxa')?.value || '',
             parcelas: document.getElementById('parcelas')?.value || '',
             restante: document.getElementById('restante')?.value || '',
@@ -554,7 +616,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         document.getElementById('entrada').value = v.entrada;
         document.getElementById('tipo').value = v.tipo;
         window.verCredito(); 
-        document.getElementById('etapa').value = v.etapa;
+        if(document.getElementById('descricao')) document.getElementById('descricao').value = v.descricao || '';
         
         if(v.tipo === 'Crédito') {
             setTimeout(() => {
@@ -703,7 +765,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
     window.setDashFiltro = (tipo, val) => {
         if(tipo === 'mes') window.dashMesAtual = val;
         if(tipo === 'ano') window.dashAnoAtual = val;
-        mostrar(telaAtual); // Recarrega tela atual aplicando o filtro
+        mostrar(telaAtual); 
     }
 
     // --- CHART JS (POWER BI STYLE) ---
@@ -720,7 +782,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             let data = v.dataVenda || 'Sem Data';
             let valorNum = parseFloat(v.valor.replace(/\D/g, '')) / 100 || 0;
             
-            // Separa Cancelados de Receitas
             if(v.statusProcesso === 'Cancelado') {
                 if(!canceladosPorData[data]) canceladosPorData[data] = 0;
                 canceladosPorData[data] += valorNum;
@@ -730,7 +791,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             }
         });
 
-        // Unifica datas pra exibir tudo
         let datasUnicas = [...new Set([...Object.keys(faturamentoPorData), ...Object.keys(canceladosPorData)])].sort();
         
         let valoresFat = datasUnicas.map(d => faturamentoPorData[d] || 0);
@@ -801,7 +861,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         const submenu = document.getElementById('submenu');
         const conteudo = document.getElementById('conteudo');
 
-        // Renderiza Select de Filtros (Usado em Vendas, Dashboard e Creditos)
+        // Fechar o menu lateral automaticamente em versão Mobile ao clicar num item
+        if(window.innerWidth <= 768) {
+            document.querySelector('.sidebar').classList.remove('active');
+            document.getElementById('sidebarOverlay').style.display = 'none';
+        }
+
         let optMeses = `<option value="ALL">Todos os Meses</option>`;
         for(let m=1; m<=12; m++) {
             let mStr = m.toString().padStart(2, '0');
@@ -818,7 +883,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         });
 
         if(tela === 'usuarios' && usuarioLogado === 'DESENVOLVEDOR') {
-            // Desenvolvedor Mode ... (mantido intocado)
             submenu.innerHTML = `<h3>Master Hub</h3><p style="font-size:13px; color:#aaa;">Controle de acesso e senhas empresariais.</p>`;
             let htmlUsuarios = ''; let empresasMap = {};
             Object.entries(usuarios).forEach(([nick, dados]) => {
@@ -974,7 +1038,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             editVendaIndex = -1;
             let options = dadosGlobal.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
             
-            // Filtro e Cálculo da Soma Baseado no Filtro (Vendas aba)
             let vendasFiltradas = dadosGlobal.vendas.filter(v => {
                 let anoVenda = v.dataVenda ? v.dataVenda.split('-')[0] : '';
                 let mesVenda = v.dataVenda ? v.dataVenda.split('-')[1] : '';
@@ -999,9 +1062,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                     <option value="Crédito">Crédito</option>
                     <option value="Débito">Débito</option>
                 </select>
-                <select id="etapa">
-                    <option>Ajuste</option><option>Desenvolvimento</option><option>Suporte</option>
-                </select>
+                <textarea id="descricao" placeholder="Descrição da Venda (Opcional)" rows="2"></textarea>
                 <div id="extra"></div>
                 <button class="btn" onclick="salvarVenda()"><i class="fa-solid fa-check-double"></i> Confirmar Venda</button>
 
@@ -1023,7 +1084,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                             ${vendasFiltradas.map((v) => {
                                 let originalIdx = dadosGlobal.vendas.indexOf(v);
                                 let dExibicao = v.dataVenda ? v.dataVenda.split('-').reverse().join('/') : '-';
-                                return `<tr>
+                                return `<tr onclick="window.showDesc(event, 'vendas', ${originalIdx})" style="cursor:pointer;" title="Clique para ver a descrição">
                                     <td style="color:#aaa; font-size:12px;">${dExibicao}</td>
                                     <td><strong>${v.cliente}</strong></td>
                                     <td style="color:var(--primary); font-weight:bold;">${v.valor}</td>
@@ -1240,7 +1301,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             let c3 = (dadosGlobal.finalizados || []).map((v, i) => ({...v, originalIdx: i, origem: 'finalizados'})).filter(v => v.tipo === 'Crédito');
             let vCreditoTotal = [...c1, ...c2, ...c3];
 
-            // Aplica filtro (Créditos) baseado na data do Vencimento ou da Venda
             let vCreditoFiltrado = vCreditoTotal.filter(v => {
                 let dataRef = v.data || v.dataVenda || '';
                 let anoVenda = dataRef ? dataRef.split('-')[0] : '';
