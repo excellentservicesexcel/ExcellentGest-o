@@ -28,6 +28,13 @@ body{height:100vh;background:var(--bg);color:var(--text);overflow: hidden;}
 input,select,textarea{width:100%;padding:10px;margin-top:10px;background:var(--input);border:1px solid transparent;color:#fff;border-radius:6px;outline: none;}
 input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 
+/* Ajuste cirúrgico para ícones de data/hora ficarem brancos */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
 .btn{margin-top:15px;padding:12px;width:100%;background:var(--primary);color:#000;border:none;border-radius:8px;cursor:pointer;font-weight:bold;transition: 0.3s; display:flex; justify-content:center; align-items:center; gap:8px;}
 .btn:hover{filter: brightness(1.2); transform: scale(1.02);}
 .btn-red { background: #F44336; color: white; }
@@ -1281,12 +1288,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                 </select>
                 <div id="extra"></div>
 
-                <h4 style="font-size:13px; margin-top:15px; color:var(--primary); border-bottom:1px solid #333; padding-bottom:5px;">Prazos e Suporte</h4>
+                <h4 style="font-size:13px; margin-top:15px; color:var(--primary); border-bottom:1px solid #333; padding-bottom:5px;">Prazo</h4>
                 
                 <div style="display:flex; gap:10px;">
                     <input id="vDias" type="number" placeholder="Prazo (Dias)" style="width:50%;" oninput="let d = window.calcularDataFim(document.getElementById('dataVenda').value, this.value); document.getElementById('vFimPreview').value = d ? d.split('-').reverse().join('/') : '';">
                     <input id="vFimPreview" placeholder="Data Fim" readonly style="width:50%; background:#222; color:#FFC107; text-align:center; font-weight:bold;">
                 </div>
+
+                <h4 style="font-size:13px; margin-top:15px; color:var(--primary); border-bottom:1px solid #333; padding-bottom:5px;">Suporte</h4>
 
                 <div style="display:flex; gap:10px; margin-top:5px;">
                     <input id="vIniSup" type="date" title="Início Suporte" style="width:60%;">
