@@ -84,7 +84,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .finalizado { background: #4CAF50; color: #fff; }
 .cancelado { background: #F44336; color: #fff; }
 
-.status-lead { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: none; outline: none; cursor: pointer; text-align: center; min-width: max-content; }
+.status-lead { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: none; outline: none; cursor: pointer; text-align: center; min-width: max-content; transition: 0.3s; }
 .lead-potencial { background: #2196F3; color: #fff; }
 .lead-quente { background: #F44336; color: #fff; }
 .lead-morno { background: #FF9800; color: #fff; }
@@ -299,6 +299,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     window.dashAnoAtual = new Date().getFullYear().toString();
     window.calMesAtual = new Date().getMonth();
     window.calAnoAtual = new Date().getFullYear();
+    window.filtroProcessoLead = 'ALL'; // NOVO: Filtro Global de Leads
+
+    window.setFiltroProcessoLead = (val) => {
+        window.filtroProcessoLead = val;
+        mostrar('leads');
+    };
 
     // --- CONTROLE DE SESSÃO E INATIVIDADE ---
     let inactivityTimer;
@@ -1389,6 +1395,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
         if(tela === 'leads') {
             editLeadIndex = -1;
+
+            // --- CONTAGEM E RESUMO ---
+            let countTotal = dadosGlobal.leads.length;
+            let counts = { 'Interessado': 0, 'Desinteressado': 0, 'Aguardar': 0, 'Follow-Up': 0, 'Agendado': 0, 'Caixa postal': 0 };
+            dadosGlobal.leads.forEach(l => {
+                let p = l.processoLead || '';
+                if(counts[p] !== undefined) counts[p]++;
+            });
+
             submenu.innerHTML = `
                 <h3>Novo Lead</h3>
                 <input id="nome" placeholder="Nome Completo">
@@ -1397,25 +1412,52 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                 <input id="empresaLead" placeholder="Empresa">
                 <textarea id="obsLead" placeholder="Observação do Lead..." rows="3"></textarea>
                 
-                <div style="margin-top:20px; border-top: 1px solid #333; padding-top:15px; text-align:left;">
-                    <div style="font-size:12px; color:#aaa; margin-bottom:5px;">Quantidade Total Leads</div>
-                    <strong style="font-size:20px; color:var(--primary)">${dadosGlobal.leads.length}</strong>
-                </div>
-
                 <button class="btn" style="margin-top:15px;" onclick="window.salvarLead()"><i class="fa-solid fa-floppy-disk"></i> Salvar Lead</button>
+
+                <div style="margin-top:20px; border-top: 1px solid #333; padding-top:15px; text-align:left;">
+                    <div style="font-size:13px; color:var(--primary); margin-bottom:10px; font-weight:bold;">Resumo de Processos</div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:11px; color:#aaa;">
+                        <div>Total Leads: <strong style="color:#fff">${countTotal}</strong></div>
+                        <div>Interessado: <strong style="color:#2196F3">${counts['Interessado']}</strong></div>
+                        <div>Aguardar: <strong style="color:#FF9800">${counts['Aguardar']}</strong></div>
+                        <div>Follow-Up: <strong style="color:#9C27B0">${counts['Follow-Up']}</strong></div>
+                        <div>Agendado: <strong style="color:#00BCD4">${counts['Agendado']}</strong></div>
+                        <div>Caixa postal: <strong style="color:#9E9E9E">${counts['Caixa postal']}</strong></div>
+                        <div style="grid-column: span 2;">Desinteressado: <strong style="color:#F44336">${counts['Desinteressado']}</strong></div>
+                    </div>
+
+                    <div style="margin-top:15px; border-top: 1px dashed #333; padding-top:10px;">
+                        <div style="font-size:12px; color:#aaa; margin-bottom:5px;">Filtrar por Processo:</div>
+                        <select onchange="window.setFiltroProcessoLead(this.value)" style="padding:8px; width:100%; font-size:12px; background:#222; border:1px solid #444; border-radius:6px; color:#fff;">
+                            <option value="ALL" ${window.filtroProcessoLead === 'ALL' ? 'selected' : ''}>Todos os Leads</option>
+                            <option value="" ${window.filtroProcessoLead === '' ? 'selected' : ''}>Sem Processo Definido</option>
+                            <option value="Interessado" ${window.filtroProcessoLead === 'Interessado' ? 'selected' : ''}>Interessado</option>
+                            <option value="Aguardar" ${window.filtroProcessoLead === 'Aguardar' ? 'selected' : ''}>Aguardar</option>
+                            <option value="Follow-Up" ${window.filtroProcessoLead === 'Follow-Up' ? 'selected' : ''}>Follow-Up</option>
+                            <option value="Agendado" ${window.filtroProcessoLead === 'Agendado' ? 'selected' : ''}>Agendado</option>
+                            <option value="Caixa postal" ${window.filtroProcessoLead === 'Caixa postal' ? 'selected' : ''}>Caixa postal</option>
+                            <option value="Desinteressado" ${window.filtroProcessoLead === 'Desinteressado' ? 'selected' : ''}>Desinteressado</option>
+                        </select>
+                    </div>
+                </div>
             `;
 
+            // --- FILTRAGEM ---
+            let leadsParaExibir = dadosGlobal.leads.map((l, idx) => ({...l, originalIdx: idx}));
+            if (window.filtroProcessoLead !== 'ALL') {
+                leadsParaExibir = leadsParaExibir.filter(l => (l.processoLead || '') === window.filtroProcessoLead);
+            }
+
             const pesosLead = {'Em potencial': 1, 'Quente': 2, 'Morno': 3, 'Frio': 4};
-            let leadsOrdenados = dadosGlobal.leads.map((l, idx) => ({...l, originalIdx: idx}));
-            leadsOrdenados.sort((a, b) => (pesosLead[a.statusLead] || 5) - (pesosLead[b.statusLead] || 5));
+            leadsParaExibir.sort((a, b) => (pesosLead[a.statusLead] || 5) - (pesosLead[b.statusLead] || 5));
 
             conteudo.innerHTML = `
                 <h2>Gestão de Leads</h2>
                 <div class="tabela-container">
                     <table class="tabela">
-                        <thead><tr><th>Nome</th><th>Documento</th><th>Status Lead</th><th>Processos</th><th>Contato Rapido</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
+                        <thead><tr><th>Nome</th><th>Empresa</th><th>Documento</th><th>Status Lead</th><th>Processos</th><th>Contato Rapido</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
-                            ${leadsOrdenados.map((l) => {
+                            ${leadsParaExibir.map((l) => {
                                 let numLimpo = l.cel.replace(/\D/g, '');
                                 let selClasse = 'lead-frio';
                                 if(l.statusLead === 'Em potencial') selClasse = 'lead-potencial';
@@ -1423,9 +1465,19 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                                 else if(l.statusLead === 'Morno') selClasse = 'lead-morno';
                                 else if(!l.statusLead) selClasse = '';
 
+                                // LÓGICA DE CORES DOS PROCESSOS
+                                let corProcesso = '#222';
+                                if(l.processoLead === 'Interessado') corProcesso = '#2196F3';
+                                else if(l.processoLead === 'Desinteressado') corProcesso = '#F44336';
+                                else if(l.processoLead === 'Aguardar') corProcesso = '#FF9800';
+                                else if(l.processoLead === 'Follow-Up') corProcesso = '#9C27B0';
+                                else if(l.processoLead === 'Agendado') corProcesso = '#00BCD4';
+                                else if(l.processoLead === 'Caixa postal') corProcesso = '#9E9E9E';
+
                                 return `
                                 <tr onclick="window.toggleObs(${l.originalIdx}, event)" style="cursor:pointer;" title="Clique na linha para ver Observações">
                                     <td><strong style="color:var(--text);">${l.nome}</strong></td>
+                                    <td style="color:#aaa;">${l.empresa || 'N/A'}</td>
                                     <td style="color:#aaa;">${l.doc || 'N/A'}</td>
                                     <td>
                                         <select class="status-lead ${selClasse}" onchange="window.mudarStatusLead(${l.originalIdx}, this.value)">
@@ -1437,12 +1489,14 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                                         </select>
                                     </td>
                                     <td>
-                                        <select class="status-lead" style="background:#222; color:#fff; padding:5px; width:120px;" onchange="window.mudarProcessoLead(${l.originalIdx}, this.value)">
-                                            <option value="" ${!l.processoLead?'selected':''}>Selecione...</option>
-                                            <option value="Interessado" ${l.processoLead==='Interessado'?'selected':''}>Interessado</option>
-                                            <option value="Desinteressado" ${l.processoLead==='Desinteressado'?'selected':''}>Desinteressado</option>
-                                            <option value="Aguardar" ${l.processoLead==='Aguardar'?'selected':''}>Aguardar</option>
-                                            <option value="Follow-Up" ${l.processoLead==='Follow-Up'?'selected':''}>Follow-Up</option>
+                                        <select class="status-lead" style="background:${corProcesso}; color:#fff; padding:5px; width:125px; border:none; outline:none;" onchange="window.mudarProcessoLead(${l.originalIdx}, this.value)">
+                                            <option value="" style="background:#222; color:#fff;" ${!l.processoLead?'selected':''}>Selecione...</option>
+                                            <option value="Interessado" style="background:#2196F3; color:#fff;" ${l.processoLead==='Interessado'?'selected':''}>Interessado</option>
+                                            <option value="Aguardar" style="background:#FF9800; color:#fff;" ${l.processoLead==='Aguardar'?'selected':''}>Aguardar</option>
+                                            <option value="Follow-Up" style="background:#9C27B0; color:#fff;" ${l.processoLead==='Follow-Up'?'selected':''}>Follow-Up</option>
+                                            <option value="Agendado" style="background:#00BCD4; color:#fff;" ${l.processoLead==='Agendado'?'selected':''}>Agendado</option>
+                                            <option value="Caixa postal" style="background:#9E9E9E; color:#fff;" ${l.processoLead==='Caixa postal'?'selected':''}>Caixa postal</option>
+                                            <option value="Desinteressado" style="background:#F44336; color:#fff;" ${l.processoLead==='Desinteressado'?'selected':''}>Desinteressado</option>
                                             <option value="Comprou" style="background:#4CAF50; color:#fff; font-weight:bold;">Comprou</option>
                                         </select>
                                     </td>
@@ -1460,7 +1514,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                                     </td>` : ''}
                                 </tr>
                                 <tr class="obs-row" id="obs-${l.originalIdx}" style="display:none; background:#181818;">
-                                    <td colspan="6" style="padding: 15px; border-bottom: 1px solid #333;">
+                                    <td colspan="7" style="padding: 15px; border-bottom: 1px solid #333;">
                                         <strong style="color:var(--primary); font-size:12px;">OBSERVAÇÃO DO LEAD:</strong><br>
                                         <span style="color:#ccc; font-size:13px; white-space:pre-wrap;">${l.obs || 'Nenhuma observação registrada.'}</span>
                                     </td>
