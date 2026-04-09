@@ -57,6 +57,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 .popup-config { background: var(--card); padding: 30px; border-radius: 15px; width: 350px; border: 1px solid var(--primary); text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.6); animation: scaleIn 0.3s ease-out; }
 @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+/* TOAST / NOTIFICAÇÃO RÁPIDA */
+.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); font-size: 14px; opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease; z-index: 9999; border-left: 4px solid var(--primary); pointer-events: none; }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
 /* TABELAS */
 .tabela-container { width: 100%; overflow-x: auto; margin-top: 20px; background: var(--card); border-radius: 8px; padding: 15px; }
 .tabela { width: 100%; border-collapse: collapse; text-align: left; }
@@ -95,36 +99,61 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 @media (max-width: 768px) {
     body { overflow-y: auto; }
     .btn-menu-mobile { display: inline-block; }
-    .container { flex-direction: column; overflow-y: auto; }
+    .container { flex-direction: column; overflow-y: auto !important; }
     .sidebar { position: fixed; left: -260px; top: 0; height: 100%; z-index: 50; transition: left 0.3s ease; box-shadow: 2px 0 15px rgba(0,0,0,0.8); width: 250px; }
     .sidebar.active { left: 0; }
-    .submenu { width: 100%; border-right: none; border-bottom: 1px solid #333; height: auto; max-height: 50vh; }
-    .main { width: 100%; flex: auto; height: auto; padding: 15px; overflow: visible; }
+    .submenu { width: 100%; border-right: none; border-bottom: 1px solid #333; height: auto !important; max-height: none !important; overflow: visible !important; }
+    .main { width: 100%; flex: auto; height: auto; padding: 15px; overflow: visible !important; }
     .topbar { padding: 0 15px; }
+    .dashboard-chart-container { height: 300px; padding: 10px; }
 }
 
 /* POPUP DESCRIÇÃO DE VENDAS */
-.popup-descricao {
-    position: absolute; display: none; background: #2A2A2A; border: 1px solid var(--primary);
-    padding: 15px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-    z-index: 300; max-width: 320px; color: #ccc; font-size: 13px; line-height: 1.5;
-    animation: fadeInDesc 0.2s ease-out;
-}
+.popup-descricao { position: absolute; display: none; background: #2A2A2A; border: 1px solid var(--primary); padding: 15px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.8); z-index: 300; max-width: 320px; color: #ccc; font-size: 13px; line-height: 1.5; animation: fadeInDesc 0.2s ease-out; }
 @keyframes fadeInDesc { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+/* CALENDÁRIO & AGENDA */
+.calendar-container { background: var(--card); border-radius: 12px; padding: 15px; margin-top: 20px; border: 1px solid #333; }
+.calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+.day-name { font-weight: bold; color: var(--primary); font-size: 12px; padding: 5px 0; }
+.day-cell { background: #2A2A2A; border-radius: 6px; padding: 10px 5px; font-size: 14px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; min-height: 45px; display: flex; align-items: center; justify-content: center; position: relative;}
+.day-cell:hover { background: #333; border-color: var(--primary); }
+.day-empty { background: transparent; cursor: default; }
+.day-has-event { border-color: var(--primary); color: var(--primary); font-weight: bold; }
+.day-has-event::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; background: var(--primary); border-radius: 50%; }
+
+/* Resolvido Bug do Popup da Agenda mudando para display: flex natural */
+.agenda-popup { background: var(--card); padding: 25px; border-radius: 12px; width: 350px; border: 1px solid var(--primary); display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.8); max-height: 80vh; }
+.agenda-popup h3 { color: var(--primary); margin-bottom: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;}
+.agenda-item { background: #2A2A2A; padding: 15px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; border-left: 3px solid var(--primary); }
+.agenda-item strong { color: #fff; display: block; font-size: 14px; margin-bottom: 3px;}
+.agenda-item-actions { margin-top: 10px; text-align: right; }
+.agenda-scroll { overflow-y: auto; flex: 1; padding-right: 5px; }
+
 </style>
 </head>
 
 <body>
 
+<div id="toast" class="toast">Nenhum agendamento nessa data.</div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div id="popupDescricao" class="popup-descricao"></div>
 
-<div class="overlay" id="customAlertOverlay" style="z-index: 400;">
+<div class="overlay" id="customAlertOverlay" style="z-index: 600;">
     <div class="popup-config" id="customAlertBox">
         <div id="customAlertIcon" style="font-size: 45px; margin-bottom: 15px;"></div>
         <h3 id="customAlertTitle"></h3>
         <p id="customAlertMsg" style="margin: 15px 0; font-size: 14px; color: #ccc; line-height: 1.5;"></p>
         <div id="customAlertButtons" style="display:flex; gap:10px; justify-content:center; margin-top: 20px;"></div>
+    </div>
+</div>
+
+<div class="overlay" id="agendaOverlay" style="z-index: 400;" onclick="if(event.target.id === 'agendaOverlay') fecharAgendaPopup()">
+    <div class="agenda-popup" id="agendaBox">
+        <h3>Agendamentos: <span id="agendaPopupData" style="color:#fff;"></span></h3>
+        <div class="agenda-scroll" id="agendaPopupContent"></div>
+        <button class="btn btn-red" onclick="fecharAgendaPopup()" style="margin-top: 15px;">Fechar</button>
     </div>
 </div>
 
@@ -203,18 +232,18 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             <div class="logo-sidebar">MENU</div>
             <div class="menu" style="display: flex; flex-direction: column; height: 100%;">
                 <button onclick="mostrar('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</button>
+                <button onclick="mostrar('agenda')"><i class="fa-solid fa-calendar-days"></i> Agenda</button>
                 <button onclick="mostrar('leads')"><i class="fa-solid fa-filter"></i> Leads</button>
                 <button onclick="mostrar('clientes')"><i class="fa-solid fa-users"></i> Clientes</button>
                 <button onclick="mostrar('vendas')"><i class="fa-solid fa-cart-shopping"></i> Vendas</button>
                 <button onclick="mostrar('processos')"><i class="fa-solid fa-tasks"></i> Processos</button>
-                <button onclick="mostrar('finalizados')"><i class="fa-solid fa-flag-checkered"></i> Finalizados</button>
                 <button onclick="mostrar('credito')"><i class="fa-solid fa-hand-holding-dollar"></i> Crédito</button>
                 
                 <button id="btnUsuarios" onclick="mostrar('usuarios')" style="display:none; background: #000; color: #fff; font-weight:bold; margin-top: 15px;">
                     <i class="fa-solid fa-user-shield" style="color:var(--primary)"></i> Desenvolvedor
                 </button>
 
-                <button onclick="location.reload()" class="btn-sair"><i class="fa-solid fa-door-open"></i> Sair</button>
+                <button onclick="localStorage.removeItem('excelUserSession'); location.reload()" class="btn-sair"><i class="fa-solid fa-door-open"></i> Sair</button>
             </div>
         </div>
         <div class="submenu" id="submenu"></div>
@@ -241,7 +270,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 
     let usuarios = {};
     let empresasConfigs = {};
-    let dadosGlobal = { leads: [], clientes: [], vendas: [], processos: [], finalizados: [] };
+    let dadosGlobal = { leads: [], clientes: [], vendas: [], agenda: [] };
     let chave = ''; 
     let isAdminMode = false;
     let usuarioLogado = ''; 
@@ -252,11 +281,42 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
     let editClienteIndex = -1;
     let editVendaIndex = -1;
     let editProcessoIndex = -1;
-    let editFinalizadoIndex = -1;
+    let editAgendaIndex = -1;
 
-    // Variáveis Globais de Filtro (Reaproveitáveis nas abas Vendas, Creditos e Dash)
+    // Variáveis Globais (Filtros e Calendário)
     window.dashMesAtual = 'ALL';
     window.dashAnoAtual = new Date().getFullYear().toString();
+    window.calMesAtual = new Date().getMonth();
+    window.calAnoAtual = new Date().getFullYear();
+
+    // --- CONTROLE DE SESSÃO E INATIVIDADE ---
+    let inactivityTimer;
+    window.resetInactivity = () => {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => {
+            localStorage.removeItem('excelUserSession');
+            location.reload();
+        }, 10 * 60 * 1000); // 10 minutos de inatividade = desloga
+    };
+
+    window.onload = () => {
+        document.body.addEventListener('mousemove', window.resetInactivity);
+        document.body.addEventListener('keydown', window.resetInactivity);
+        document.body.addEventListener('click', window.resetInactivity);
+        window.resetInactivity();
+
+        let session = localStorage.getItem('excelUserSession');
+        if(session) {
+            let s = JSON.parse(session);
+            usuarioLogado = s.usuarioLogado;
+            chave = s.chave;
+            if(usuarioLogado === 'DESENVOLVEDOR') {
+                document.getElementById('btnUsuarios').style.display = 'block';
+                chave = 'admin_desenvolvedor';
+            }
+            iniciarApp();
+        }
+    };
 
     // --- LÓGICA DO MENU MOBILE ---
     window.toggleSidebar = (e) => {
@@ -279,7 +339,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         txt = txt.replace(/\n/g, '<br>');
 
         const popup = document.getElementById('popupDescricao');
-        popup.innerHTML = `<strong style="color:var(--primary); display:block; margin-bottom:8px;">Descrição da Venda:</strong>${txt}`;
+        popup.innerHTML = `<strong style="color:var(--primary); display:block; margin-bottom:8px;">Descrição:</strong>${txt}`;
         popup.style.display = 'block';
 
         let x = e.pageX + 15;
@@ -290,12 +350,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         popup.style.top = y + 'px';
     };
 
-    // Fechar observações e popups clicando fora
     document.addEventListener('click', (e) => {
         if(!e.target.closest('.tabela-container')) {
             document.querySelectorAll('.obs-row').forEach(r => r.style.display = 'none');
         }
-        
         const popup = document.getElementById('popupDescricao');
         if (popup && popup.style.display === 'block' && !e.target.closest('tr') && !e.target.closest('.popup-descricao')) {
             popup.style.display = 'none';
@@ -390,6 +448,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             chave = 'admin_desenvolvedor';
             usuarioLogado = 'DESENVOLVEDOR';
             document.getElementById('btnUsuarios').style.display = 'block';
+            localStorage.setItem('excelUserSession', JSON.stringify({usuarioLogado, chave}));
             iniciarApp();
             return;
         }
@@ -406,6 +465,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             chave = usuarios[u].empresa.replace(/\s+/g, '_').toLowerCase();
             usuarioLogado = u;
             document.getElementById('btnUsuarios').style.display = 'none';
+            localStorage.setItem('excelUserSession', JSON.stringify({usuarioLogado, chave}));
             iniciarApp();
         } else { uiAlerta('Usuário ou senha incorretos!', 'erro'); }
     };
@@ -423,17 +483,40 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 
     function conectarDados() {
         if(chave === 'admin_desenvolvedor') {
-            dadosGlobal = { leads: [], clientes: [], vendas: [], processos: [], finalizados: [] };
+            dadosGlobal = { leads: [], clientes: [], vendas: [], agenda: [] };
             mostrar('usuarios'); 
             return;
         }
         onValue(ref(db, 'dados/' + chave), (snapshot) => {
-            dadosGlobal = snapshot.val() || { leads: [], clientes: [], vendas: [], processos: [], finalizados: [] };
+            dadosGlobal = snapshot.val() || { leads: [], clientes: [], vendas: [], agenda: [] };
             if(!dadosGlobal.leads) dadosGlobal.leads = [];
             if(!dadosGlobal.clientes) dadosGlobal.clientes = [];
             if(!dadosGlobal.vendas) dadosGlobal.vendas = [];
-            if(!dadosGlobal.processos) dadosGlobal.processos = [];
-            if(!dadosGlobal.finalizados) dadosGlobal.finalizados = [];
+            if(!dadosGlobal.agenda) dadosGlobal.agenda = [];
+            
+            // Migração Dinâmica Segura: Puxa antigos processos e finalizados para Vendas
+            let modificado = false;
+            if(dadosGlobal.processos && dadosGlobal.processos.length > 0) {
+                dadosGlobal.processos.forEach(p => {
+                    let jaExiste = dadosGlobal.vendas.find(v => v.cliente === p.cliente && v.dataVenda === p.dataVenda && v.valor === p.valor);
+                    if(jaExiste) Object.assign(jaExiste, p);
+                    else dadosGlobal.vendas.push(p);
+                });
+                dadosGlobal.processos = [];
+                modificado = true;
+            }
+            if(dadosGlobal.finalizados && dadosGlobal.finalizados.length > 0) {
+                dadosGlobal.finalizados.forEach(f => {
+                    f.statusProcesso = 'Finalizado';
+                    let jaExiste = dadosGlobal.vendas.find(v => v.cliente === f.cliente && v.dataVenda === f.dataVenda && v.valor === f.valor);
+                    if(jaExiste) Object.assign(jaExiste, f);
+                    else dadosGlobal.vendas.push(f);
+                });
+                dadosGlobal.finalizados = [];
+                modificado = true;
+            }
+            if(modificado) set(ref(db, 'dados/' + chave), dadosGlobal);
+
             mostrar(telaAtual);
         });
     }
@@ -481,6 +564,169 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         } else { uiAlerta('Senha de liberação incorreta!', 'erro'); }
     };
 
+    // --- LÓGICA AGENDA ---
+    window.autoFillClienteAgenda = () => {
+        let nomeCli = document.getElementById('agendaCliente').value;
+        let c = dadosGlobal.clientes.find(x => x.nome === nomeCli);
+        if(c) {
+            document.getElementById('agendaEmpresa').value = c.empresa || '';
+            document.getElementById('agendaTel').value = c.cel || '';
+        } else {
+            document.getElementById('agendaEmpresa').value = '';
+            document.getElementById('agendaTel').value = '';
+        }
+    };
+
+    function checkTimeConflict(dataAgenda, horaAgenda, excludeIndex = -1) {
+        let [nH, nM] = horaAgenda.split(':').map(Number);
+        let novoMinutos = nH * 60 + nM;
+
+        for (let i = 0; i < dadosGlobal.agenda.length; i++) {
+            if (i === excludeIndex) continue;
+            let a = dadosGlobal.agenda[i];
+            if (a.data === dataAgenda) {
+                let [eH, eM] = a.hora.split(':').map(Number);
+                let existMinutos = eH * 60 + eM;
+                if (Math.abs(novoMinutos - existMinutos) < 120) return true; 
+            }
+        }
+        return false;
+    }
+
+    window.salvarAgenda = () => {
+        let data = document.getElementById('agendaData').value;
+        let hora = document.getElementById('agendaHora').value;
+        let cli = document.getElementById('agendaCliente').value;
+        let emp = document.getElementById('agendaEmpresa').value;
+        let tel = document.getElementById('agendaTel').value;
+        let desc = document.getElementById('agendaDesc').value;
+
+        if(!data || !hora || !cli) return uiAlerta("Data, Hora e Cliente são obrigatórios.", "aviso");
+
+        if(checkTimeConflict(data, hora, editAgendaIndex)) {
+            return uiAlerta("Conflito de horário! Já existe um agendamento com menos de 2 horas de diferença para este dia.", "erro");
+        }
+
+        let obj = { data, hora, cliente: cli, empresa: emp, telefone: tel, descricao: desc, usuarioCadastrou: usuarioLogado };
+
+        if(editAgendaIndex > -1) {
+            dadosGlobal.agenda[editAgendaIndex] = obj;
+            editAgendaIndex = -1;
+            uiAlerta("Agendamento atualizado com sucesso!", "sucesso");
+        } else {
+            dadosGlobal.agenda.push(obj);
+            uiAlerta("Agendamento salvo com sucesso!", "sucesso");
+        }
+        
+        set(ref(db, 'dados/' + chave), dadosGlobal);
+        mostrar('agenda');
+    };
+
+    window.editarAgenda = (idx) => {
+        window.fecharAgendaPopup();
+        let a = dadosGlobal.agenda[idx];
+        document.getElementById('agendaData').value = a.data;
+        document.getElementById('agendaHora').value = a.hora;
+        document.getElementById('agendaCliente').value = a.cliente;
+        document.getElementById('agendaEmpresa').value = a.empresa;
+        document.getElementById('agendaTel').value = a.telefone;
+        document.getElementById('agendaDesc').value = a.descricao;
+        editAgendaIndex = idx;
+        document.querySelector('.submenu .btn').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Agendamento';
+    };
+
+    window.mudarMesCal = (diff) => {
+        window.calMesAtual += diff;
+        if(window.calMesAtual > 11) { window.calMesAtual = 0; window.calAnoAtual++; }
+        if(window.calMesAtual < 0) { window.calMesAtual = 11; window.calAnoAtual--; }
+        window.renderCalendar();
+    };
+
+    window.renderCalendar = () => {
+        let root = document.getElementById('calendarRoot');
+        if(!root) return;
+
+        const mesesStr = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        let diasNoMes = new Date(window.calAnoAtual, window.calMesAtual + 1, 0).getDate();
+        let primeiroDia = new Date(window.calAnoAtual, window.calMesAtual, 1).getDay();
+
+        let mesStrFormato = (window.calMesAtual + 1).toString().padStart(2, '0');
+        let prefixoData = `${window.calAnoAtual}-${mesStrFormato}-`;
+
+        let eventosMes = {};
+        (dadosGlobal.agenda || []).forEach((a, idx) => {
+            if(a.data.startsWith(prefixoData)) {
+                let dia = parseInt(a.data.split('-')[2]);
+                if(!eventosMes[dia]) eventosMes[dia] = [];
+                eventosMes[dia].push({...a, originalIdx: idx});
+            }
+        });
+
+        let gridHtml = '';
+        for(let i=0; i<primeiroDia; i++) gridHtml += `<div class="day-cell day-empty"></div>`;
+        for(let d=1; d<=diasNoMes; d++) {
+            let temEvento = eventosMes[d] ? 'day-has-event' : '';
+            gridHtml += `<div class="day-cell ${temEvento}" onclick="window.abrirDiaAgenda(${d})">${d}</div>`;
+        }
+
+        root.innerHTML = `
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button class="action-btn edit-btn" onclick="window.mudarMesCal(-1)" style="padding: 10px 15px;"><i class="fa-solid fa-chevron-left"></i></button>
+                    <strong style="font-size:18px; color:var(--primary);">${mesesStr[window.calMesAtual]} ${window.calAnoAtual}</strong>
+                    <button class="action-btn edit-btn" onclick="window.mudarMesCal(1)" style="padding: 10px 15px;"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="calendar-grid">
+                    <div class="day-name">D</div><div class="day-name">S</div><div class="day-name">T</div>
+                    <div class="day-name">Q</div><div class="day-name">Q</div><div class="day-name">S</div><div class="day-name">S</div>
+                    ${gridHtml}
+                </div>
+            </div>
+        `;
+    };
+
+    window.abrirDiaAgenda = (dia) => {
+        let mesStr = (window.calMesAtual + 1).toString().padStart(2, '0');
+        let diaStr = dia.toString().padStart(2, '0');
+        let dataBuscada = `${window.calAnoAtual}-${mesStr}-${diaStr}`;
+        
+        let eventos = (dadosGlobal.agenda || []).map((a, idx) => ({...a, originalIdx: idx})).filter(a => a.data === dataBuscada);
+        eventos.sort((a,b) => a.hora.localeCompare(b.hora));
+
+        if(eventos.length === 0) {
+            let toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+            return; 
+        }
+
+        let html = eventos.map(e => {
+            let numLimpo = e.telefone ? e.telefone.replace(/\D/g, '') : '';
+            return `
+            <div class="agenda-item">
+                <strong><i class="fa-regular fa-clock" style="color:var(--primary)"></i> ${e.hora} - ${e.cliente}</strong>
+                <span style="color:#aaa; font-size:12px;">Empresa: ${e.empresa || '-'} | Tel: ${e.telefone || '-'}</span>
+                ${e.telefone ? `<a href="https://wa.me/55${numLimpo}" target="_blank" style="color:#25D366; margin-left:10px; font-size:14px;"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
+                ${e.descricao ? `<p style="margin-top:8px; color:#ccc; border-top: 1px dashed #444; padding-top: 5px;">${e.descricao}</p>` : ''}
+                ${e.usuarioCadastrou ? `<span style="display:block; font-size:11px; color:#888; margin-top:5px;"><i class="fa-solid fa-user-pen"></i> Agendado por: @${e.usuarioCadastrou}</span>` : ''}
+                ${isAdminMode ? `
+                <div class="agenda-item-actions">
+                    <button class="action-btn edit-btn" onclick="window.editarAgenda(${e.originalIdx})"><i class="fa-solid fa-pen"></i></button>
+                    <button class="action-btn del-btn" onclick="window.fecharAgendaPopup(); window.excluirGenerico('agenda', ${e.originalIdx});"><i class="fa-solid fa-trash"></i></button>
+                </div>` : ''}
+            </div>
+        `}).join('');
+
+        document.getElementById('agendaPopupData').innerText = `${diaStr}/${mesStr}/${window.calAnoAtual}`;
+        document.getElementById('agendaPopupContent').innerHTML = html;
+        document.getElementById('agendaOverlay').style.display = 'flex';
+    };
+
+    window.fecharAgendaPopup = () => {
+        document.getElementById('agendaOverlay').style.display = 'none';
+        if(telaAtual === 'agenda') renderCalendar();
+    };
+
     // --- LEADS & CLIENTES ---
     window.salvarLead = () => {
         const n = document.getElementById('nome').value;
@@ -519,6 +765,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         uiConfirmar("Deseja realmente excluir este lead permanentemente?", () => {
             dadosGlobal.leads.splice(i, 1);
             set(ref(db, 'dados/' + chave), dadosGlobal);
+            mostrar('leads');
         });
     };
 
@@ -535,6 +782,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             uiAlerta("Parabéns! Lead convertido em Cliente.", "sucesso");
         }
         set(ref(db, 'dados/' + chave), dadosGlobal);
+        mostrar('leads');
     };
 
     window.toggleObs = (i, event) => {
@@ -558,7 +806,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         }
     }
 
-    // --- VENDAS, PROCESSOS & EXCLUSAO GENERICA ---
+    // --- VENDAS E PROCESSOS (UNIFICADO) ---
     window.hojeInput = () => { const hj = new Date(); return hj.toISOString().split('T')[0]; }
 
     window.calcularDataFim = (dataInicioStr, dias) => {
@@ -583,25 +831,24 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             taxa: document.getElementById('taxa')?.value || '',
             parcelas: document.getElementById('parcelas')?.value || '',
             restante: document.getElementById('restante')?.value || '',
-            data: document.getElementById('data')?.value || ''
+            data: document.getElementById('data')?.value || '',
+            dataInicio: document.getElementById('dataVenda').value, // <--- Ajuste CIRÚRGICO aqui: Puxa direto da Data Venda
+            dias: document.getElementById('vDias')?.value || '',
+            inicioSuporte: document.getElementById('vIniSup')?.value || '',
+            diasSuporte: document.getElementById('vDiasSup')?.value || '',
+            statusProcesso: document.getElementById('vStatus')?.value || 'Aguardando'
         };
+
+        v.dataFim = window.calcularDataFim(v.dataInicio, v.dias);
+        v.fimSuporte = window.calcularDataFim(v.inicioSuporte, v.diasSuporte);
 
         if (editVendaIndex > -1) {
             dadosGlobal.vendas[editVendaIndex] = v;
             editVendaIndex = -1;
-            uiAlerta("Venda atualizada!", "sucesso");
+            uiAlerta("Venda/Processo atualizado!", "sucesso");
         } else {
             dadosGlobal.vendas.push(v);
-            
-            // Envia automaticamente para Processos
-            let novoProcesso = {...v, 
-                statusProcesso: 'Aguardando', 
-                dataInicio: window.hojeInput(), 
-                dias: '', dataFim: '',
-                inicioSuporte: '', diasSuporte: '', fimSuporte: ''
-            };
-            dadosGlobal.processos.push(novoProcesso);
-            uiAlerta("Venda registrada e enviada automaticamente para Processos!", "sucesso");
+            uiAlerta("Venda registrada e enviada automaticamente para os Processos!", "sucesso");
         }
         set(ref(db, 'dados/' + chave), dadosGlobal);
         mostrar('vendas');
@@ -610,14 +857,27 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
     window.editarVenda = (i) => {
         const v = dadosGlobal.vendas[i];
         document.getElementById('clienteSel').value = v.cliente;
-        document.getElementById('cpf').value = v.cpf;
+        document.getElementById('cpf').value = v.cpf || '';
         document.getElementById('dataVenda').value = v.dataVenda || window.hojeInput();
         document.getElementById('valor').value = v.valor;
-        document.getElementById('entrada').value = v.entrada;
+        document.getElementById('entrada').value = v.entrada || '';
         document.getElementById('tipo').value = v.tipo;
         window.verCredito(); 
         if(document.getElementById('descricao')) document.getElementById('descricao').value = v.descricao || '';
         
+        // <--- Ajuste CIRÚRGICO: Atualiza vDias e força o cálculo visual do Data Fim
+        if(document.getElementById('vDias')) {
+            document.getElementById('vDias').value = v.dias || '';
+            let dFim = window.calcularDataFim(v.dataVenda || window.hojeInput(), v.dias);
+            if(document.getElementById('vFimPreview') && dFim) {
+                document.getElementById('vFimPreview').value = dFim.split('-').reverse().join('/');
+            }
+        }
+
+        if(document.getElementById('vIniSup')) document.getElementById('vIniSup').value = v.inicioSuporte || '';
+        if(document.getElementById('vDiasSup')) document.getElementById('vDiasSup').value = v.diasSuporte || '';
+        if(document.getElementById('vStatus')) document.getElementById('vStatus').value = v.statusProcesso || 'Aguardando';
+
         if(v.tipo === 'Crédito') {
             setTimeout(() => {
                 document.getElementById('taxa').value = v.taxa;
@@ -627,16 +887,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             }, 50);
         }
         editVendaIndex = i;
-        document.querySelector('.submenu .btn').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Venda';
+        document.querySelector('.submenu .btn').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Registro Único';
     };
 
     window.editarProcesso = (i) => {
-        const p = dadosGlobal.processos[i];
+        const p = dadosGlobal.vendas[i];
         document.getElementById('clienteSel').value = p.cliente;
-        document.getElementById('cpf').value = p.cpf;
+        document.getElementById('cpf').value = p.cpf || '';
         document.getElementById('dataVenda').value = p.dataVenda || window.hojeInput();
         document.getElementById('valor').value = p.valor;
-        document.getElementById('entrada').value = p.entrada;
+        document.getElementById('entrada').value = p.entrada || '';
         document.getElementById('tipo').value = p.tipo;
         window.verCredito(); 
         
@@ -656,9 +916,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         const cli = document.getElementById('clienteSel').value;
         if(!cli) return;
 
-        let pOriginal = dadosGlobal.processos[editProcessoIndex];
+        let pOriginal = dadosGlobal.vendas[editProcessoIndex];
         pOriginal.cliente = cli; pOriginal.cpf = document.getElementById('cpf').value;
         pOriginal.dataVenda = document.getElementById('dataVenda').value;
+        
+        // <--- Ajuste CIRÚRGICO: Se editar pelo Processo, atualiza as lógicas raízes amarradas à Data Venda
+        pOriginal.dataInicio = pOriginal.dataVenda; 
+        if(pOriginal.dias) pOriginal.dataFim = window.calcularDataFim(pOriginal.dataInicio, pOriginal.dias);
+        
         pOriginal.valor = document.getElementById('valor').value;
         pOriginal.entrada = document.getElementById('entrada').value;
         pOriginal.tipo = document.getElementById('tipo').value;
@@ -667,79 +932,29 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         pOriginal.restante = document.getElementById('restante')?.value || '';
         pOriginal.data = document.getElementById('data')?.value || '';
 
-        dadosGlobal.processos[editProcessoIndex] = pOriginal;
+        dadosGlobal.vendas[editProcessoIndex] = pOriginal;
         editProcessoIndex = -1;
         uiAlerta("Processo atualizado!", "sucesso");
         set(ref(db, 'dados/' + chave), dadosGlobal);
         mostrar('processos');
     }
 
-    window.editarFinalizado = (i) => {
-        const f = dadosGlobal.finalizados[i];
-        document.getElementById('clienteSel').value = f.cliente;
-        document.getElementById('cpf').value = f.cpf;
-        document.getElementById('dataVenda').value = f.dataVenda || window.hojeInput();
-        document.getElementById('valor').value = f.valor;
-        document.getElementById('entrada').value = f.entrada;
-        document.getElementById('tipo').value = f.tipo;
-        window.verCredito(); 
-        
-        if(f.tipo === 'Crédito') {
-            setTimeout(() => {
-                document.getElementById('taxa').value = f.taxa;
-                document.getElementById('parcelas').value = f.parcelas;
-                document.getElementById('restante').value = f.restante;
-                document.getElementById('data').value = f.data;
-            }, 50);
-        }
-        editFinalizadoIndex = i;
-        document.querySelector('.submenu .btn').innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Atualizar Finalizado';
-    };
-
-    window.salvarEdicaoFinalizado = () => {
-        const cli = document.getElementById('clienteSel').value;
-        if(!cli) return;
-
-        let fOriginal = dadosGlobal.finalizados[editFinalizadoIndex];
-        fOriginal.cliente = cli; fOriginal.cpf = document.getElementById('cpf').value;
-        fOriginal.dataVenda = document.getElementById('dataVenda').value;
-        fOriginal.valor = document.getElementById('valor').value;
-        fOriginal.entrada = document.getElementById('entrada').value;
-        fOriginal.tipo = document.getElementById('tipo').value;
-        fOriginal.taxa = document.getElementById('taxa')?.value || '';
-        fOriginal.parcelas = document.getElementById('parcelas')?.value || '';
-        fOriginal.restante = document.getElementById('restante')?.value || '';
-        fOriginal.data = document.getElementById('data')?.value || '';
-
-        dadosGlobal.finalizados[editFinalizadoIndex] = fOriginal;
-        editFinalizadoIndex = -1;
-        uiAlerta("Registro finalizado atualizado!", "sucesso");
-        set(ref(db, 'dados/' + chave), dadosGlobal);
-        mostrar('finalizados');
-    }
-
     window.excluirGenerico = (arrayName, i) => {
         uiConfirmar("Deseja deletar este registro permanentemente?", () => {
             dadosGlobal[arrayName].splice(i, 1);
             set(ref(db, 'dados/' + chave), dadosGlobal);
+            mostrar(telaAtual); 
         });
     };
 
     window.mudarStatusProcesso = (index, novoStatus) => {
-        if(novoStatus === 'Finalizado') {
-            let item = dadosGlobal.processos.splice(index, 1)[0];
-            dadosGlobal.finalizados.push(item);
-            set(ref(db, 'dados/' + chave), dadosGlobal);
-            uiAlerta("Processo concluído e movido para Finalizados!", "sucesso");
-            mostrar('processos');
-        } else {
-            dadosGlobal.processos[index].statusProcesso = novoStatus;
-            set(ref(db, 'dados/' + chave), dadosGlobal);
-        }
+        dadosGlobal.vendas[index].statusProcesso = novoStatus;
+        set(ref(db, 'dados/' + chave), dadosGlobal);
+        mostrar(telaAtual); // Atualiza Vendas ou Processos para refletir o desaparecimento/mudança
     }
 
     window.atualizarDiasProcesso = (index, dias) => {
-        let p = dadosGlobal.processos[index];
+        let p = dadosGlobal.vendas[index];
         p.dias = dias;
         p.dataFim = window.calcularDataFim(p.dataInicio, dias);
         set(ref(db, 'dados/' + chave), dadosGlobal);
@@ -747,7 +962,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
     }
     
     window.atualizarSuporteProcesso = (index, tipo, val) => {
-        let p = dadosGlobal.processos[index];
+        let p = dadosGlobal.vendas[index];
         if(tipo === 'inicio') p.inicioSuporte = val;
         if(tipo === 'dias') p.diasSuporte = val;
         p.fimSuporte = window.calcularDataFim(p.inicioSuporte, p.diasSuporte);
@@ -808,48 +1023,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             data: {
                 labels: labelsFormatadas,
                 datasets: [
-                    {
-                        label: 'Faturamento Bruto',
-                        data: valoresFat,
-                        borderColor: '#FFD600',
-                        backgroundColor: 'rgba(255, 214, 0, 0.15)',
-                        borderWidth: 3,
-                        pointBackgroundColor: '#FFD600',
-                        fill: true, tension: 0.4 
-                    },
-                    {
-                        label: 'Cancelamentos',
-                        data: valoresCanc,
-                        borderColor: '#FFFFFF',
-                        backgroundColor: 'rgba(255, 255, 255, 0)',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        pointBackgroundColor: '#FFFFFF',
-                        fill: false, tension: 0.4
-                    }
+                    { label: 'Faturamento Bruto', data: valoresFat, borderColor: '#FFD600', backgroundColor: 'rgba(255, 214, 0, 0.15)', borderWidth: 3, pointBackgroundColor: '#FFD600', fill: true, tension: 0.4 },
+                    { label: 'Cancelamentos', data: valoresCanc, borderColor: '#FFFFFF', backgroundColor: 'rgba(255, 255, 255, 0)', borderWidth: 2, borderDash: [5, 5], pointBackgroundColor: '#FFFFFF', fill: false, tension: 0.4 }
                 ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false, color: '#aaa',
                 plugins: {
                     legend: { labels: { color: '#fff', font: { family: 'Poppins' } } },
-                    tooltip: {
-                        backgroundColor: '#000', titleFont: { family: 'Poppins' }, bodyFont: { family: 'Poppins' },
-                        callbacks: {
-                            label: function(context) {
-                                let value = context.parsed.y;
-                                return ' R$ ' + value.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-                            }
-                        }
-                    }
+                    tooltip: { backgroundColor: '#000', titleFont: { family: 'Poppins' }, bodyFont: { family: 'Poppins' }, callbacks: { label: function(context) { return ' R$ ' + context.parsed.y.toLocaleString('pt-BR', {minimumFractionDigits: 2}); } } }
                 },
                 scales: {
                     x: { grid: { color: '#333' }, ticks: { color: '#aaa', font: { family: 'Poppins' } } },
-                    y: { 
-                        grid: { color: '#333' }, 
-                        ticks: { color: '#aaa', font: { family: 'Poppins' }, callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); } },
-                        beginAtZero: true
-                    }
+                    y: { grid: { color: '#333' }, ticks: { color: '#aaa', font: { family: 'Poppins' }, callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); } }, beginAtZero: true }
                 }
             }
         });
@@ -861,7 +1047,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         const submenu = document.getElementById('submenu');
         const conteudo = document.getElementById('conteudo');
 
-        // Fechar o menu lateral automaticamente em versão Mobile ao clicar num item
         if(window.innerWidth <= 768) {
             document.querySelector('.sidebar').classList.remove('active');
             document.getElementById('sidebarOverlay').style.display = 'none';
@@ -873,8 +1058,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             optMeses += `<option value="${mStr}" ${window.dashMesAtual === mStr ? 'selected' : ''}>${mStr}</option>`;
         }
         let anosUnicos = ['2024','2025','2026','2027'];
-        let todasAsVendasGerais = [...(dadosGlobal.vendas || []), ...(dadosGlobal.processos || []), ...(dadosGlobal.finalizados || [])];
-        todasAsVendasGerais.forEach(v => {
+        (dadosGlobal.vendas || []).forEach(v => {
             if(v.dataVenda) { let a = v.dataVenda.split('-')[0]; if(!anosUnicos.includes(a)) anosUnicos.push(a); }
         });
         let optAnos = `<option value="ALL">Todos os Anos</option>`;
@@ -894,8 +1078,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                 let trs = listaUsuarios.map(u => {
                     let corBg = u.statusAcesso === 'permitido' ? '#4CAF50' : (u.statusAcesso === 'negado' ? '#F44336' : '#FFD600');
                     let corTexto = (u.statusAcesso === 'pendente' || corBg === '#FFD600') ? '#000' : '#fff';
-                    return `
-                    <tr>
+                    return `<tr>
                         <td><b style="color:var(--primary)">@</b>${u.nick}</td>
                         <td><select class="status-select" onchange="window.atualizarAcesso('${u.nick}', this.value)" style="background: ${corBg}; color: ${corTexto};"><option value="pendente" style="background:#333; color:#fff;" ${u.statusAcesso === 'pendente'?'selected':''}>Pendente</option><option value="permitido" style="background:#333; color:#fff;" ${u.statusAcesso === 'permitido'?'selected':''}>Permitido</option><option value="negado" style="background:#333; color:#fff;" ${u.statusAcesso === 'negado'?'selected':''}>Negado</option></select></td>
                         <td><input type="text" value="${u.senha}" onchange="window.atualizarSenhaUsuario('${u.nick}', this.value)" style="width: 100%; background: transparent; border: none; color: #fff; border-bottom: 1px solid #555; text-align:left; padding:2px;"></td>
@@ -906,6 +1089,35 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             }).join('');
             conteudo.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><h2>Gestão de Usuários</h2></div><div style="margin-top:20px;">${htmlUsuarios || '<p style="color:#aaa;">Nenhum usuário cadastrado.</p>'}</div>`;
             return;
+        }
+
+        if(tela === 'agenda') {
+            editAgendaIndex = -1;
+            let options = dadosGlobal.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+
+            submenu.innerHTML = `
+                <h3>Novo Agendamento</h3>
+                <input id="agendaData" type="date">
+                <input id="agendaHora" type="time" title="Horário">
+                <select id="agendaCliente" onchange="window.autoFillClienteAgenda()">
+                    <option value="">Selecionar Cliente</option>${options}
+                </select>
+                <input id="agendaEmpresa" placeholder="Empresa Associada" readonly style="background:#222; color:#aaa;">
+                <input id="agendaTel" placeholder="Telefone do Cliente" readonly style="background:#222; color:#aaa;">
+                <textarea id="agendaDesc" placeholder="Descrição ou Observação do evento" rows="3"></textarea>
+                
+                <button class="btn" style="margin-top:15px;" onclick="window.salvarAgenda()"><i class="fa-solid fa-floppy-disk"></i> Salvar Agendamento</button>
+                
+                <div style="margin-top:25px; border-top: 1px solid #333; padding-top:15px; text-align:left;">
+                    <p style="font-size:12px; color:#aaa; line-height: 1.5;">O sistema bloqueia novos agendamentos que conflitem em 2 horas do horário de outro evento no mesmo dia.</p>
+                </div>
+            `;
+
+            conteudo.innerHTML = `
+                <h2>Calendário de Agendamentos</h2>
+                <div id="calendarRoot"></div>
+            `;
+            window.renderCalendar();
         }
 
         if(tela === 'leads') {
@@ -1046,15 +1258,20 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                 return passaMes && passaAno;
             });
             let faturamentoFiltro = 0;
-            vendasFiltradas.forEach(v => { faturamentoFiltro += parseFloat(v.valor.replace(/\D/g, '')) / 100 || 0; });
+            vendasFiltradas.forEach(v => { 
+                if(v.statusProcesso !== 'Cancelado') faturamentoFiltro += parseFloat(v.valor.replace(/\D/g, '')) / 100 || 0; 
+            });
 
+            // <--- Ajuste CIRÚRGICO: Nova estrutura do Submenu na aba de Vendas
             submenu.innerHTML = `
-                <h3>Lançar Venda</h3>
-                <input id="dataVenda" type="date" value="${window.hojeInput()}">
+                <h3>Lançar Venda / Processo</h3>
+                <input id="dataVenda" type="date" value="${window.hojeInput()}" title="Data da Venda" onchange="if(document.getElementById('vDias') && document.getElementById('vDias').value) { let d = window.calcularDataFim(this.value, document.getElementById('vDias').value); document.getElementById('vFimPreview').value = d ? d.split('-').reverse().join('/') : ''; }">
                 <select id="clienteSel" onchange="window.autoCPF()">
                     <option value="">Selecionar Cliente</option>${options}
                 </select>
                 <input id="cpf" placeholder="CPF/CNPJ" readonly style="background:#222;">
+                
+                <h4 style="font-size:13px; margin-top:15px; color:var(--primary); border-bottom:1px solid #333; padding-bottom:5px;">Valores</h4>
                 <input id="valor" placeholder="Valor Total" oninput="window.mascaraMoeda(this); window.calcularRestante()">
                 <input id="entrada" placeholder="Valor Entrada" oninput="window.mascaraMoeda(this); window.calcularRestante()">
                 <select id="tipo" onchange="window.verCredito()">
@@ -1062,9 +1279,29 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                     <option value="Crédito">Crédito</option>
                     <option value="Débito">Débito</option>
                 </select>
-                <textarea id="descricao" placeholder="Descrição da Venda (Opcional)" rows="2"></textarea>
                 <div id="extra"></div>
-                <button class="btn" onclick="salvarVenda()"><i class="fa-solid fa-check-double"></i> Confirmar Venda</button>
+
+                <h4 style="font-size:13px; margin-top:15px; color:var(--primary); border-bottom:1px solid #333; padding-bottom:5px;">Prazos e Suporte</h4>
+                
+                <div style="display:flex; gap:10px;">
+                    <input id="vDias" type="number" placeholder="Prazo (Dias)" style="width:50%;" oninput="let d = window.calcularDataFim(document.getElementById('dataVenda').value, this.value); document.getElementById('vFimPreview').value = d ? d.split('-').reverse().join('/') : '';">
+                    <input id="vFimPreview" placeholder="Data Fim" readonly style="width:50%; background:#222; color:#FFC107; text-align:center; font-weight:bold;">
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:5px;">
+                    <input id="vIniSup" type="date" title="Início Suporte" style="width:60%;">
+                    <input id="vDiasSup" type="number" placeholder="Dias Sup." style="width:40%;">
+                </div>
+                
+                ${isAdminMode ? `
+                <select id="vStatus" style="margin-top:10px;">
+                    <option value="Aguardando" selected>Aguardando (Processos)</option>
+                    <option value="Suporte">Suporte</option>
+                    <option value="Finalizado">Finalizado Direto</option>
+                </select>` : ''}
+
+                <textarea id="descricao" placeholder="Descrição da Venda (Opcional)" rows="2"></textarea>
+                <button class="btn" onclick="salvarVenda()"><i class="fa-solid fa-check-double"></i> Confirmar Registro</button>
 
                 <div style="margin-top:25px; border-top: 1px solid #333; padding-top:15px; text-align:left;">
                     <h4 style="font-size:13px; margin-bottom:5px;">Filtros (Vendas)</h4>
@@ -1076,19 +1313,45 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                 </div>
             `;
             
-            conteudo.innerHTML = `<h2>Histórico de Vendas Lançadas</h2>
+            conteudo.innerHTML = `<h2>Mural Central de Vendas & Registros Únicos</h2>
                 <div class="tabela-container">
                     <table class="tabela">
-                        <thead><tr><th>Data</th><th>Cliente</th><th>Valor</th><th>Pagamento</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
+                        <thead><tr><th>Data Venda</th><th>Cliente</th><th>Valor</th><th>Data Início</th><th>Dias</th><th>Data Fim</th><th>Início Sup.</th><th>Dias Sup.</th><th>Fim Sup.</th><th>Status</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
                             ${vendasFiltradas.map((v) => {
                                 let originalIdx = dadosGlobal.vendas.indexOf(v);
                                 let dExibicao = v.dataVenda ? v.dataVenda.split('-').reverse().join('/') : '-';
+                                let dInicExibicao = v.dataInicio ? v.dataInicio.split('-').reverse().join('/') : '-';
+                                let dFimExibicao = v.dataFim ? v.dataFim.split('-').reverse().join('/') : '---';
+                                let dIniSup = v.inicioSuporte ? v.inicioSuporte.split('-').reverse().join('/') : '-';
+                                let dFimSup = v.fimSuporte ? v.fimSuporte.split('-').reverse().join('/') : '---';
+                                
+                                let cls = v.statusProcesso === 'Aguardando' ? 'andamento' : (v.statusProcesso === 'Finalizado' ? 'finalizado' : (v.statusProcesso === 'Suporte' ? 'lead-potencial' : 'cancelado'));
+
+                                let statusHtml = '';
+                                if(isAdminMode) {
+                                    statusHtml = `
+                                    <select class="badge ${cls}" onchange="window.mudarStatusProcesso(${originalIdx}, this.value)">
+                                        <option value="Aguardando" style="background:#333; color:#fff;" ${v.statusProcesso==='Aguardando'?'selected':''}>Aguardando</option>
+                                        <option value="Suporte" style="background:#333; color:#fff;" ${v.statusProcesso==='Suporte'?'selected':''}>Suporte</option>
+                                        <option value="Finalizado" style="background:#333; color:#fff;" ${v.statusProcesso==='Finalizado'?'selected':''}>Finalizado</option>
+                                        <option value="Cancelado" style="background:#333; color:#fff;" ${v.statusProcesso==='Cancelado'?'selected':''}>Cancelado</option>
+                                    </select>`;
+                                } else {
+                                    statusHtml = `<span class="badge ${cls}" style="display:inline-block; padding: 6px 12px;">${v.statusProcesso || 'Aguardando'}</span>`;
+                                }
+
                                 return `<tr onclick="window.showDesc(event, 'vendas', ${originalIdx})" style="cursor:pointer;" title="Clique para ver a descrição">
                                     <td style="color:#aaa; font-size:12px;">${dExibicao}</td>
                                     <td><strong>${v.cliente}</strong></td>
                                     <td style="color:var(--primary); font-weight:bold;">${v.valor}</td>
-                                    <td>${v.tipo}</td>
+                                    <td style="font-size:13px;">${dInicExibicao}</td>
+                                    <td style="text-align:center;">${v.dias || '-'}</td>
+                                    <td style="font-size:13px; color:#FFC107; font-weight:bold;">${dFimExibicao}</td>
+                                    <td style="font-size:13px;">${dIniSup}</td>
+                                    <td style="text-align:center;">${v.diasSuporte || '-'}</td>
+                                    <td style="font-size:13px; color:#2196F3; font-weight:bold;">${dFimSup}</td>
+                                    <td>${statusHtml}</td>
                                     ${isAdminMode ? `
                                     <td style="text-align:right;">
                                         <button class="action-btn edit-btn" onclick="editarVenda(${originalIdx})"><i class="fa-solid fa-pen"></i></button>
@@ -1105,37 +1368,45 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
             editProcessoIndex = -1;
             let options = dadosGlobal.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
             
-            submenu.innerHTML = `
-                <div id="formEdicaoProcesso">
-                    <h3>Editar Base Processo</h3>
-                    <p style="color:#aaa; font-size:12px; margin-bottom:15px;">Use a tabela para alterar dias e status rápidos. Use aqui para alterar a raiz da venda gerada.</p>
-                    <input id="dataVenda" type="date">
-                    <select id="clienteSel" onchange="window.autoCPF()">
-                        <option value="">Selecionar Cliente</option>${options}
-                    </select>
-                    <input id="cpf" placeholder="CPF/CNPJ" readonly style="background:#222;">
-                    <input id="valor" placeholder="Valor Total" oninput="window.mascaraMoeda(this); window.calcularRestante()">
-                    <input id="entrada" placeholder="Valor Entrada" oninput="window.mascaraMoeda(this); window.calcularRestante()">
-                    <select id="tipo" onchange="window.verCredito()">
-                        <option value="Pix" selected>Pix</option>
-                        <option value="Crédito">Crédito</option>
-                        <option value="Débito">Débito</option>
-                    </select>
-                    <div id="extra"></div>
-                    <button class="btn" onclick="salvarEdicaoProcesso()"><i class="fa-solid fa-floppy-disk"></i> Salvar Edição</button>
-                </div>
-            `;
+            if(isAdminMode) {
+                submenu.innerHTML = `
+                    <div id="formEdicaoProcesso">
+                        <h3>Editar Base Processo</h3>
+                        <p style="color:#aaa; font-size:12px; margin-bottom:15px;">Use a tabela para alterar dias rápidos. Use aqui para alterar a raiz da venda.</p>
+                        <input id="dataVenda" type="date">
+                        <select id="clienteSel" onchange="window.autoCPF()">
+                            <option value="">Selecionar Cliente</option>${options}
+                        </select>
+                        <input id="cpf" placeholder="CPF/CNPJ" readonly style="background:#222;">
+                        <input id="valor" placeholder="Valor Total" oninput="window.mascaraMoeda(this); window.calcularRestante()">
+                        <input id="entrada" placeholder="Valor Entrada" oninput="window.mascaraMoeda(this); window.calcularRestante()">
+                        <select id="tipo" onchange="window.verCredito()">
+                            <option value="Pix" selected>Pix</option>
+                            <option value="Crédito">Crédito</option>
+                            <option value="Débito">Débito</option>
+                        </select>
+                        <div id="extra"></div>
+                        <button class="btn" onclick="salvarEdicaoProcesso()"><i class="fa-solid fa-floppy-disk"></i> Salvar Edição</button>
+                    </div>
+                `;
+            } else {
+                submenu.innerHTML = `
+                    <h3>Processos Ativos</h3>
+                    <p style="color:#aaa; font-size:13px;">O formulário base está oculto. Ative o Admin para editar a raiz da venda gerada ou retorne à aba Vendas para criar um novo registro.</p>
+                `;
+            }
 
-            let procOrdenados = dadosGlobal.processos.map((p, idx) => ({...p, originalIdx: idx}));
+            // Exibe APENAS os não-finalizados e não-cancelados
+            let procOrdenados = dadosGlobal.vendas.map((p, idx) => ({...p, originalIdx: idx})).filter(p => p.statusProcesso !== 'Finalizado' && p.statusProcesso !== 'Cancelado');
             procOrdenados.sort((a, b) => new Date(a.dataVenda) - new Date(b.dataVenda));
 
-            conteudo.innerHTML = `<h2>Processos Ativos</h2>
+            conteudo.innerHTML = `<h2>Trabalhos em Andamento</h2>
                 <div class="tabela-container">
                     <table class="tabela">
                         <thead><tr><th>Data Venda</th><th>Cliente</th><th>Data Início</th><th>Dias</th><th>Data Fim</th><th>Início Suporte</th><th>Dias Sup</th><th>Fim Sup</th><th>Status</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
                             ${procOrdenados.map((p) => {
-                                let cls = p.statusProcesso === 'Aguardando' ? 'andamento' : (p.statusProcesso === 'Finalizado' ? 'finalizado' : (p.statusProcesso === 'Suporte' ? 'lead-potencial' : 'cancelado'));
+                                let cls = p.statusProcesso === 'Aguardando' ? 'andamento' : 'lead-potencial';
                                 let dExibicao = p.dataVenda ? p.dataVenda.split('-').reverse().join('/') : '-';
                                 let dFimExibicao = p.dataFim ? p.dataFim.split('-').reverse().join('/') : '---';
                                 let dInicExibicao = p.dataInicio ? p.dataInicio.split('-').reverse().join('/') : '-';
@@ -1156,68 +1427,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                                         <select class="badge ${cls}" onchange="window.mudarStatusProcesso(${p.originalIdx}, this.value)">
                                             <option value="Aguardando" style="background:#333; color:#fff;" ${p.statusProcesso==='Aguardando'?'selected':''}>Aguardando</option>
                                             <option value="Suporte" style="background:#333; color:#fff;" ${p.statusProcesso==='Suporte'?'selected':''}>Suporte</option>
-                                            <option value="Finalizado" style="background:#333; color:#fff;" ${p.statusProcesso==='Finalizado'?'selected':''}>Finalizado (Mover)</option>
-                                            <option value="Cancelado" style="background:#333; color:#fff;" ${p.statusProcesso==='Cancelado'?'selected':''}>Cancelado</option>
+                                            <option value="Finalizado" style="background:#333; color:#fff;">Finalizar Processo (Mover)</option>
                                         </select>
                                     </td>
                                     ${isAdminMode ? `
                                     <td style="text-align:right;">
                                         <button class="action-btn edit-btn" onclick="editarProcesso(${p.originalIdx})"><i class="fa-solid fa-pen"></i></button>
-                                        <button class="action-btn del-btn" onclick="window.excluirGenerico('processos', ${p.originalIdx})"><i class="fa-solid fa-trash"></i></button>
-                                    </td>` : ''}
-                                </tr>`;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>`;
-        }
-
-        if(tela === 'finalizados') {
-            editFinalizadoIndex = -1;
-            let options = dadosGlobal.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
-            
-            submenu.innerHTML = `
-                <div id="formEdicaoFinalizado">
-                    <h3>Editar Registro Finalizado</h3>
-                    <input id="dataVenda" type="date">
-                    <select id="clienteSel" onchange="window.autoCPF()">
-                        <option value="">Selecionar Cliente</option>${options}
-                    </select>
-                    <input id="cpf" placeholder="CPF/CNPJ" readonly style="background:#222;">
-                    <input id="valor" placeholder="Valor Total" oninput="window.mascaraMoeda(this); window.calcularRestante()">
-                    <input id="entrada" placeholder="Valor Entrada" oninput="window.mascaraMoeda(this); window.calcularRestante()">
-                    <select id="tipo" onchange="window.verCredito()">
-                        <option value="Pix" selected>Pix</option>
-                        <option value="Crédito">Crédito</option>
-                        <option value="Débito">Débito</option>
-                    </select>
-                    <div id="extra"></div>
-                    <button class="btn" onclick="salvarEdicaoFinalizado()"><i class="fa-solid fa-floppy-disk"></i> Salvar Edição</button>
-                </div>
-            `;
-
-            let finOrdenados = dadosGlobal.finalizados.map((f, idx) => ({...f, originalIdx: idx}));
-            finOrdenados.sort((a, b) => new Date(b.dataVenda) - new Date(a.dataVenda));
-
-            conteudo.innerHTML = `<h2>Trabalhos Finalizados</h2>
-                <div class="tabela-container">
-                    <table class="tabela">
-                        <thead><tr><th>Data Venda</th><th>Cliente</th><th>Valor</th><th>Data Fim</th><th>Status</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
-                        <tbody>
-                            ${finOrdenados.map((f) => {
-                                let dExibicao = f.dataVenda ? f.dataVenda.split('-').reverse().join('/') : '-';
-                                let dFimExibicao = f.dataFim ? f.dataFim.split('-').reverse().join('/') : '---';
-                                
-                                return `<tr>
-                                    <td style="color:#aaa; font-size:12px;">${dExibicao}</td>
-                                    <td><strong>${f.cliente}</strong></td>
-                                    <td style="color:var(--primary); font-weight:bold;">${f.valor}</td>
-                                    <td style="font-size:13px; color:#4CAF50;">${dFimExibicao}</td>
-                                    <td><span class="badge finalizado">Finalizado</span></td>
-                                    ${isAdminMode ? `
-                                    <td style="text-align:right;">
-                                        <button class="action-btn edit-btn" onclick="editarFinalizado(${f.originalIdx})"><i class="fa-solid fa-pen"></i></button>
-                                        <button class="action-btn del-btn" onclick="window.excluirGenerico('finalizados', ${f.originalIdx})"><i class="fa-solid fa-trash"></i></button>
+                                        <button class="action-btn del-btn" onclick="window.excluirGenerico('vendas', ${p.originalIdx})"><i class="fa-solid fa-trash"></i></button>
                                     </td>` : ''}
                                 </tr>`;
                             }).join('')}
@@ -1227,7 +1443,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         }
 
         if(tela === 'dashboard') {
-            let todasAsVendas = [...(dadosGlobal.vendas || []), ...(dadosGlobal.processos || []), ...(dadosGlobal.finalizados || [])];
+            let todasAsVendas = dadosGlobal.vendas || [];
             
             let vendasFiltradas = todasAsVendas.filter(v => {
                 let anoVenda = v.dataVenda ? v.dataVenda.split('-')[0] : '';
@@ -1268,7 +1484,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                     <p style="font-size: 28px; font-weight: bold; color:var(--text);">${dadosGlobal.clientes.length}</p>
                 </div>
                 <div class="card" style="width: 100%; text-align: center; padding:15px; box-shadow:none; border:1px solid #333;">
-                    <h4 style="color: #aaa; font-weight:400; font-size:14px;">Total Vendas Lançadas</h4>
+                    <h4 style="color: #aaa; font-weight:400; font-size:14px;">Total Registros Únicos</h4>
                     <p style="font-size: 28px; font-weight: bold; color:var(--text);">${todasAsVendas.length}</p>
                 </div>
             `;
@@ -1296,10 +1512,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
         }
 
         if(tela === 'credito') {
-            let c1 = (dadosGlobal.vendas || []).map((v, i) => ({...v, originalIdx: i, origem: 'vendas'})).filter(v => v.tipo === 'Crédito');
-            let c2 = (dadosGlobal.processos || []).map((v, i) => ({...v, originalIdx: i, origem: 'processos'})).filter(v => v.tipo === 'Crédito');
-            let c3 = (dadosGlobal.finalizados || []).map((v, i) => ({...v, originalIdx: i, origem: 'finalizados'})).filter(v => v.tipo === 'Crédito');
-            let vCreditoTotal = [...c1, ...c2, ...c3];
+            let vCreditoTotal = (dadosGlobal.vendas || []).map((v, i) => ({...v, originalIdx: i, origem: 'vendas'})).filter(v => v.tipo === 'Crédito');
 
             let vCreditoFiltrado = vCreditoTotal.filter(v => {
                 let dataRef = v.data || v.dataVenda || '';
@@ -1332,7 +1545,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                         <thead><tr><th>Fase Atual</th><th>Cliente</th><th>Total</th><th>Restante</th><th>Parcelas</th><th>Vencimento</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
                             ${vCreditoFiltrado.map(v => `<tr>
-                                <td><span class="badge" style="background:#222; color:#aaa; font-weight:normal;">${v.origem.toUpperCase()}</span></td>
+                                <td><span class="badge" style="background:#222; color:#aaa; font-weight:normal;">${v.statusProcesso.toUpperCase()}</span></td>
                                 <td><strong>${v.cliente}</strong></td>
                                 <td style="color:#aaa;">${v.valor}</td>
                                 <td style="color:#F44336; font-weight:bold;">${v.restante}</td>
@@ -1340,8 +1553,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
                                 <td><span class="badge" style="background:#222; color:var(--primary);">${v.data ? v.data.split('-').reverse().join('/') : '-'}</span></td>
                                 ${isAdminMode ? `
                                 <td style="text-align:right;">
-                                    <button class="action-btn edit-btn" onclick="mostrar('${v.origem}'); setTimeout(()=> window['editar${v.origem.charAt(0).toUpperCase() + v.origem.slice(1).replace('s', v.origem==='vendas'?'a':'o')}'](${v.originalIdx}), 100)" title="Editar na aba de origem"><i class="fa-solid fa-pen"></i></button>
-                                    <button class="action-btn del-btn" onclick="window.excluirGenerico('${v.origem}', ${v.originalIdx})" title="Excluir Registro"><i class="fa-solid fa-trash"></i></button>
+                                    <button class="action-btn edit-btn" onclick="mostrar('${v.origem}'); setTimeout(()=> window.editarVenda(${v.originalIdx}), 100)" title="Editar na aba Vendas"><i class="fa-solid fa-pen"></i></button>
+                                    <button class="action-btn del-btn" onclick="window.excluirGenerico('vendas', ${v.originalIdx})" title="Excluir Registro"><i class="fa-solid fa-trash"></i></button>
                                 </td>` : ''}
                             </tr>`).join('')}
                         </tbody>
