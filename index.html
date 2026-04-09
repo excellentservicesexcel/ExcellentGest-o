@@ -598,9 +598,32 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     };
 
     // --- LÓGICA AGENDA ---
+
+    // NOVA FUNÇÃO: Alterna a lista de contatos entre Lead e Cliente
+    window.mudarTipoAgenda = (nomeSelecionado = '') => {
+        let tipo = document.getElementById('agendaTipoContato').value;
+        let selectContatos = document.getElementById('agendaCliente');
+        let optionsHtml = `<option value="">Selecionar ${tipo === 'lead' ? 'Lead' : 'Cliente'}</option>`;
+        
+        let arrayAlvo = tipo === 'lead' ? dadosGlobal.leads : dadosGlobal.clientes;
+        
+        arrayAlvo.forEach(item => {
+            let selected = item.nome === nomeSelecionado ? 'selected' : '';
+            optionsHtml += `<option value="${item.nome}" ${selected}>${item.nome}</option>`;
+        });
+        
+        selectContatos.innerHTML = optionsHtml;
+        window.autoFillClienteAgenda();
+    };
+
+    // ATUALIZADO: Agora busca da lista correta (Lead ou Cliente)
     window.autoFillClienteAgenda = () => {
+        let tipo = document.getElementById('agendaTipoContato').value;
         let nomeCli = document.getElementById('agendaCliente').value;
-        let c = dadosGlobal.clientes.find(x => x.nome === nomeCli);
+        
+        let arrayAlvo = tipo === 'lead' ? dadosGlobal.leads : dadosGlobal.clientes;
+        let c = arrayAlvo.find(x => x.nome === nomeCli);
+        
         if(c) {
             document.getElementById('agendaEmpresa').value = c.empresa || '';
             document.getElementById('agendaTel').value = c.cel || '';
@@ -626,21 +649,23 @@ input[type="time"]::-webkit-calendar-picker-indicator {
         return false;
     }
 
+    // ATUALIZADO: Adicionada a propriedade tipoContato para o salvamento
     window.salvarAgenda = () => {
         let data = document.getElementById('agendaData').value;
         let hora = document.getElementById('agendaHora').value;
+        let tipoContato = document.getElementById('agendaTipoContato').value;
         let cli = document.getElementById('agendaCliente').value;
         let emp = document.getElementById('agendaEmpresa').value;
         let tel = document.getElementById('agendaTel').value;
         let desc = document.getElementById('agendaDesc').value;
 
-        if(!data || !hora || !cli) return uiAlerta("Data, Hora e Cliente são obrigatórios.", "aviso");
+        if(!data || !hora || !cli) return uiAlerta("Data, Hora e Contato são obrigatórios.", "aviso");
 
         if(checkTimeConflict(data, hora, editAgendaIndex)) {
             return uiAlerta("Conflito de horário! Já existe um agendamento com menos de 2 horas de diferença para este dia.", "erro");
         }
 
-        let obj = { data, hora, cliente: cli, empresa: emp, telefone: tel, descricao: desc, usuarioCadastrou: usuarioLogado };
+        let obj = { data, hora, tipoContato, cliente: cli, empresa: emp, telefone: tel, descricao: desc, usuarioCadastrou: usuarioLogado };
 
         if(editAgendaIndex > -1) {
             dadosGlobal.agenda[editAgendaIndex] = obj;
@@ -655,12 +680,18 @@ input[type="time"]::-webkit-calendar-picker-indicator {
         mostrar('agenda');
     };
 
+    // ATUALIZADO: Chama a reconstrução da lista antes de setar os valores
     window.editarAgenda = (idx) => {
         window.fecharAgendaPopup();
         let a = dadosGlobal.agenda[idx];
         document.getElementById('agendaData').value = a.data;
         document.getElementById('agendaHora').value = a.hora;
-        document.getElementById('agendaCliente').value = a.cliente;
+        
+        if (document.getElementById('agendaTipoContato')) {
+            document.getElementById('agendaTipoContato').value = a.tipoContato || 'cliente';
+            window.mudarTipoAgenda(a.cliente);
+        }
+
         document.getElementById('agendaEmpresa').value = a.empresa;
         document.getElementById('agendaTel').value = a.telefone;
         document.getElementById('agendaDesc').value = a.descricao;
@@ -1366,17 +1397,24 @@ input[type="time"]::-webkit-calendar-picker-indicator {
         // ------------------ OUTRAS ABAS INTACTAS ------------------
         if(tela === 'agenda') {
             editAgendaIndex = -1;
-            let options = dadosGlobal.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
 
+            // ATUALIZADO: O HTML do submenu da Agenda agora tem o <select> de Tipo
             submenu.innerHTML = `
                 <h3>Novo Agendamento</h3>
                 <input id="agendaData" type="date">
                 <input id="agendaHora" type="time" title="Horário">
-                <select id="agendaCliente" onchange="window.autoFillClienteAgenda()">
-                    <option value="">Selecionar Cliente</option>${options}
+                
+                <select id="agendaTipoContato" onchange="window.mudarTipoAgenda()" style="margin-bottom: 10px;">
+                    <option value="cliente" selected>Cliente</option>
+                    <option value="lead">Lead</option>
                 </select>
+
+                <select id="agendaCliente" onchange="window.autoFillClienteAgenda()">
+                    <option value="">Selecionar Cliente</option>
+                </select>
+                
                 <input id="agendaEmpresa" placeholder="Empresa Associada" readonly style="background:#222; color:#aaa;">
-                <input id="agendaTel" placeholder="Telefone do Cliente" readonly style="background:#222; color:#aaa;">
+                <input id="agendaTel" placeholder="Telefone do Contato" readonly style="background:#222; color:#aaa;">
                 <textarea id="agendaDesc" placeholder="Descrição ou Observação do evento" rows="3"></textarea>
                 
                 <button class="btn" style="margin-top:15px;" onclick="window.salvarAgenda()"><i class="fa-solid fa-floppy-disk"></i> Salvar Agendamento</button>
@@ -1385,6 +1423,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                     <p style="font-size:12px; color:#aaa; line-height: 1.5;">O sistema bloqueia novos agendamentos que conflitem em 2 horas do horário de outro evento no mesmo dia.</p>
                 </div>
             `;
+            
+            // ATUALIZADO: Inicializa a lista suspensa assim que renderiza a tela
+            window.mudarTipoAgenda();
 
             conteudo.innerHTML = `
                 <h2>Calendário de Agendamentos</h2>
