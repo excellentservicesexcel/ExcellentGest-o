@@ -130,6 +130,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .day-has-event { border-color: var(--primary); color: var(--primary); font-weight: bold; }
 .day-has-event::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; background: var(--primary); border-radius: 50%; }
 
+/* Nova classe para dias do calendário que já passaram */
+.day-past-event { border-color: #666 !important; color: #aaa !important; }
+.day-past-event::after { background: #666 !important; }
+
 .agenda-popup { background: var(--card); padding: 25px; border-radius: 12px; width: 350px; border: 1px solid var(--primary); display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.8); max-height: 80vh; }
 .agenda-popup h3 { color: var(--primary); margin-bottom: 15px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;}
 .agenda-item { background: #2A2A2A; padding: 15px; border-radius: 8px; margin-bottom: 10px; font-size: 13px; border-left: 3px solid var(--primary); }
@@ -230,7 +234,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
             <i class="fa-solid fa-bars btn-menu-mobile" onclick="toggleSidebar(event)"></i>
             <span style="font-weight: 600; letter-spacing: 1px;">EXCELLENT <span id="adminTag" class="admin-badge">MODO EDIÇÃO / ADMIN</span></span>
         </div>
-        <i class="fa-solid fa-gear config-icon" onclick="abrirConfig()" title="Configurações / Liberação"></i>
+        <div style="display:flex; align-items: center; gap: 20px;">
+            <div id="virtualClock" style="font-family: 'Courier New', Courier, monospace; font-size: 16px; font-weight: bold; color: var(--primary); background: #000; padding: 4px 12px; border-radius: 6px; border: 1px solid #333; letter-spacing: 1px; box-shadow: inset 0 0 5px rgba(255,214,0,0.2);">00:00:00</div>
+            <i class="fa-solid fa-gear config-icon" onclick="abrirConfig()" title="Configurações / Liberação"></i>
+        </div>
     </div>
     
     <div class="container">
@@ -306,7 +313,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
         mostrar('leads');
     };
 
-    // --- CONTROLE DE SESSÃO E INATIVIDADE ---
+    // --- CONTROLE DE SESSÃO, INATIVIDADE E RELÓGIO VIRTUAL ---
     let inactivityTimer;
     window.resetInactivity = () => {
         clearTimeout(inactivityTimer);
@@ -321,6 +328,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
         document.body.addEventListener('keydown', window.resetInactivity);
         document.body.addEventListener('click', window.resetInactivity);
         window.resetInactivity();
+
+        // Relógio Virtual
+        setInterval(() => {
+            let clk = document.getElementById('virtualClock');
+            if(clk) clk.innerText = new Date().toLocaleTimeString('pt-BR');
+        }, 1000);
 
         let session = localStorage.getItem('excelUserSession');
         if(session) {
@@ -716,6 +729,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
         let mesStrFormato = (window.calMesAtual + 1).toString().padStart(2, '0');
         let prefixoData = `${window.calAnoAtual}-${mesStrFormato}-`;
+        let dataHoje = new Date().toISOString().split('T')[0]; // Captura data de hoje YYYY-MM-DD
 
         let eventosMes = {};
         (dadosGlobal.agenda || []).forEach((a, idx) => {
@@ -729,8 +743,14 @@ input[type="time"]::-webkit-calendar-picker-indicator {
         let gridHtml = '';
         for(let i=0; i<primeiroDia; i++) gridHtml += `<div class="day-cell day-empty"></div>`;
         for(let d=1; d<=diasNoMes; d++) {
+            let diaStr = d.toString().padStart(2, '0');
+            let dataCheck = prefixoData + diaStr;
+            let isPassado = dataCheck < dataHoje;
+            
             let temEvento = eventosMes[d] ? 'day-has-event' : '';
-            gridHtml += `<div class="day-cell ${temEvento}" onclick="window.abrirDiaAgenda(${d})">${d}</div>`;
+            let passadoClasse = isPassado && eventosMes[d] ? 'day-past-event' : '';
+            
+            gridHtml += `<div class="day-cell ${temEvento} ${passadoClasse}" onclick="window.abrirDiaAgenda(${d})">${d}</div>`;
         }
 
         root.innerHTML = `
@@ -1362,7 +1382,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                 
                 <div class="tabela-container">
                     <table class="tabela">
-                        <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>V. Previsto</th><th>Status</th><th>Valor Efetivo</th><th>Data Pag.</th><th style="text-align:right;">Ações</th></tr></thead>
+                        <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>V. Previsto</th><th>Status</th><th>Valor Efetivo</th><th>Data Pag.</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
                             ${financFiltrado.map((f) => {
                                 let originalIdx = dadosGlobal.financeiro.indexOf(f);
@@ -1381,10 +1401,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                                     <td><span class="badge ${corStatus}">${f.status}</span></td>
                                     <td style="font-weight:bold; color:var(--primary);">${f.pago || '-'}</td>
                                     <td style="color:#aaa; font-size:12px;">${f.status === 'Pago' ? dPaga : '-'}</td>
+                                    ${isAdminMode ? `
                                     <td style="text-align:right;">
                                         <button class="action-btn edit-btn" onclick="editarFinanceiro(${originalIdx})"><i class="fa-solid fa-pen"></i></button>
                                         <button class="action-btn del-btn" onclick="window.excluirGenerico('financeiro', ${originalIdx})"><i class="fa-solid fa-trash"></i></button>
-                                    </td>
+                                    </td>` : ''}
                                 </tr>`;
                             }).join('')}
                         </tbody>
@@ -1656,12 +1677,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                     <input id="vDiasSup" type="number" placeholder="Dias Sup." style="width:40%;">
                 </div>
                 
-                ${isAdminMode ? `
                 <select id="vStatus" style="margin-top:10px;">
                     <option value="Aguardando" selected>Aguardando (Processos)</option>
                     <option value="Suporte">Suporte</option>
                     <option value="Finalizado">Finalizado Direto</option>
-                </select>` : ''}
+                </select>
 
                 <textarea id="descricao" placeholder="Descrição da Venda (Opcional)" rows="2"></textarea>
                 <button class="btn" onclick="salvarVenda()"><i class="fa-solid fa-check-double"></i> Confirmar Registro</button>
@@ -1679,7 +1699,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
             conteudo.innerHTML = `<h2>Mural Central de Vendas & Registros Únicos</h2>
                 <div class="tabela-container">
                     <table class="tabela">
-                        <thead><tr><th>Data Venda</th><th>Cliente</th><th>Valor</th><th>Data Início</th><th>Dias</th><th>Data Fim</th><th>Início Sup.</th><th>Dias Sup.</th><th>Fim Sup.</th><th>Status</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
+                        <thead><tr><th>Data Venda</th><th>Cliente</th><th>Valor</th><th>Entrada</th><th>Data Início</th><th>Dias</th><th>Data Fim</th><th>Início Sup.</th><th>Dias Sup.</th><th>Fim Sup.</th><th>Status</th>${isAdminMode ? '<th style="text-align:right;">Ações</th>' : ''}</tr></thead>
                         <tbody>
                             ${vendasFiltradas.map((v) => {
                                 let originalIdx = dadosGlobal.vendas.indexOf(v);
@@ -1691,23 +1711,19 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                                 
                                 let cls = v.statusProcesso === 'Aguardando' ? 'andamento' : (v.statusProcesso === 'Finalizado' ? 'finalizado' : (v.statusProcesso === 'Suporte' ? 'lead-potencial' : 'cancelado'));
 
-                                let statusHtml = '';
-                                if(isAdminMode) {
-                                    statusHtml = `
-                                    <select class="badge ${cls}" onchange="window.mudarStatusProcesso(${originalIdx}, this.value)">
-                                        <option value="Aguardando" style="background:#333; color:#fff;" ${v.statusProcesso==='Aguardando'?'selected':''}>Aguardando</option>
-                                        <option value="Suporte" style="background:#333; color:#fff;" ${v.statusProcesso==='Suporte'?'selected':''}>Suporte</option>
-                                        <option value="Finalizado" style="background:#333; color:#fff;" ${v.statusProcesso==='Finalizado'?'selected':''}>Finalizado</option>
-                                        <option value="Cancelado" style="background:#333; color:#fff;" ${v.statusProcesso==='Cancelado'?'selected':''}>Cancelado</option>
-                                    </select>`;
-                                } else {
-                                    statusHtml = `<span class="badge ${cls}" style="display:inline-block; padding: 6px 12px;">${v.statusProcesso || 'Aguardando'}</span>`;
-                                }
+                                let statusHtml = `
+                                <select class="badge ${cls}" onchange="window.mudarStatusProcesso(${originalIdx}, this.value)">
+                                    <option value="Aguardando" style="background:#333; color:#fff;" ${v.statusProcesso==='Aguardando'?'selected':''}>Aguardando</option>
+                                    <option value="Suporte" style="background:#333; color:#fff;" ${v.statusProcesso==='Suporte'?'selected':''}>Suporte</option>
+                                    <option value="Finalizado" style="background:#333; color:#fff;" ${v.statusProcesso==='Finalizado'?'selected':''}>Finalizado</option>
+                                    <option value="Cancelado" style="background:#333; color:#fff;" ${v.statusProcesso==='Cancelado'?'selected':''}>Cancelado</option>
+                                </select>`;
 
                                 return `<tr onclick="window.showDesc(event, 'vendas', ${originalIdx})" style="cursor:pointer;" title="Clique para ver a descrição">
                                     <td style="color:#aaa; font-size:12px;">${dExibicao}</td>
                                     <td><strong>${v.cliente}</strong></td>
                                     <td style="color:var(--primary); font-weight:bold;">${v.valor}</td>
+                                    <td style="color:#4CAF50;">${v.entrada || '-'}</td>
                                     <td style="font-size:13px;">${dInicExibicao}</td>
                                     <td style="text-align:center;">${v.dias || '-'}</td>
                                     <td style="font-size:13px; color:#FFC107; font-weight:bold;">${dFimExibicao}</td>
@@ -1824,31 +1840,37 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                 else faturamentoFiltrado += vNum;
             });
 
-            // Lógica Global para o novo card de saldo (Entradas - Saídas - Cancelamentos)
+            // Lógica Global para o card de saldo (Entradas - Saídas - Cancelamentos)
             let faturamentoTotalGeral = 0;
-            let calcEntradasGlobais = 0;
-            let calcSaidasGlobais = 0;
-            let calcCancelamentosGlobais = 0;
-
+            
             todasAsVendas.forEach(v => {
                 let vNum = parseFloat(v.valor.replace(/\D/g, '')) / 100 || 0;
                 if(v.statusProcesso !== 'Cancelado') {
                     faturamentoTotalGeral += vNum;
-                    calcEntradasGlobais += vNum;
-                } else {
-                    calcCancelamentosGlobais += vNum;
                 }
             });
 
-            (dadosGlobal.financeiro || []).forEach(f => {
+            let financFiltradoLocal = (dadosGlobal.financeiro || []).filter(f => {
+                let anoF = f.data ? f.data.split('-')[0] : '';
+                let mesF = f.data ? f.data.split('-')[1] : '';
+                let passaMes = (window.dashMesAtual === 'ALL') || (mesF === window.dashMesAtual);
+                let passaAno = (window.dashAnoAtual === 'ALL') || (anoF === window.dashAnoAtual);
+                return passaMes && passaAno;
+            });
+
+            let financEntradasFiltro = 0;
+            let financSaidasFiltro = 0;
+
+            financFiltradoLocal.forEach(f => {
                 if(f.status === 'Pago') {
                     let fNum = parseFloat((f.pago || '0').replace(/\D/g, '')) / 100 || 0;
-                    if(f.tipo === 'Entrada') calcEntradasGlobais += fNum;
-                    if(f.tipo === 'Saida') calcSaidasGlobais += fNum;
+                    if(f.tipo === 'Entrada') financEntradasFiltro += fNum;
+                    if(f.tipo === 'Saida') financSaidasFiltro += fNum;
                 }
             });
 
-            let saldoGeralCalc = calcEntradasGlobais - calcSaidasGlobais - calcCancelamentosGlobais;
+            // Balanço Filtrado (Entradas Totais - Saídas Totais - Cancelamentos já são separados de faturamentoFiltrado)
+            let balancoFiltrado = faturamentoFiltrado + financEntradasFiltro - financSaidasFiltro - cancelamentosFiltrado;
 
             submenu.innerHTML = `
                 <h3>Resumo Geral</h3>
@@ -1868,10 +1890,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                     <h4 style="color: #aaa; font-weight:400; font-size:14px;">Total Registros Únicos</h4>
                     <p style="font-size: 28px; font-weight: bold; color:var(--text);">${todasAsVendas.length}</p>
                 </div>
-                <div class="card" style="width: 100%; text-align: center; padding:15px; box-shadow:none; border:1px solid #333; margin-top: 15px;">
-                    <h4 style="color: #aaa; font-weight:400; font-size:14px;">Balanço (Entrada - Saída - Cancel.)</h4>
-                    <p style="font-size: 20px; font-weight: bold; color:${saldoGeralCalc >= 0 ? '#4CAF50' : '#F44336'};">R$ ${saldoGeralCalc.toLocaleString('pt-BR', {minimumFractionDigits:2})}</p>
-                </div>
             `;
             
             conteudo.innerHTML = `
@@ -1880,6 +1898,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                     <div style="text-align:right;">
                         <span style="font-size:12px; color:#aaa;">Faturamento (No Filtro)</span><br>
                         <strong style="font-size:24px; color:var(--primary);">R$ ${faturamentoFiltrado.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
+                        <br>
+                        <span style="font-size:12px; color:#aaa;">Balanço (No Filtro)</span><br>
+                        <strong style="font-size:20px; color:${balancoFiltrado >= 0 ? '#4CAF50' : '#F44336'};">R$ ${balancoFiltrado.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
                         <br>
                         <span style="font-size:12px; color:#aaa;">Cancelamentos (Branco)</span><br>
                         <strong style="font-size:15px; color:#fff;">R$ ${cancelamentosFiltrado.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
@@ -1899,14 +1920,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
             // INJEÇÃO GRÁFICOS FINANCEIROS (APENAS PARA ADMINS NO DASHBOARD)
             // -----------------------------------------------------------------
             if(userRole === 'admin' || usuarioLogado === 'DESENVOLVEDOR') {
-                let financFiltrado = (dadosGlobal.financeiro || []).filter(f => {
-                    let anoF = f.data ? f.data.split('-')[0] : '';
-                    let mesF = f.data ? f.data.split('-')[1] : '';
-                    let passaMes = (window.dashMesAtual === 'ALL') || (mesF === window.dashMesAtual);
-                    let passaAno = (window.dashAnoAtual === 'ALL') || (anoF === window.dashAnoAtual);
-                    return passaMes && passaAno;
-                });
-
                 conteudo.innerHTML += `
                     <h3 style="margin-top:35px; border-bottom:1px solid #333; padding-bottom:10px;">Visão Financeira (Exclusivo Admin)</h3>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top:20px;">
@@ -1915,7 +1928,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
                     </div>
                     <div class="dashboard-chart-container" style="margin-top:20px; height: 350px;"><canvas id="chartFinBar"></canvas></div>
                 `;
-                setTimeout(() => window.renderDashboardFinanceiro(financFiltrado), 100);
+                setTimeout(() => window.renderDashboardFinanceiro(financFiltradoLocal), 100);
             }
         }
 
